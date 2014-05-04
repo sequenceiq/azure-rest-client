@@ -15,28 +15,28 @@
 	</properties>
 
 	<repositories>
-		<repository>
-			<id>aws-release</id>
-			<name>S3 Release Repository</name>
-			<url>http://maven.sequenceiq.com/release</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>aws-snapshots</id>
-			<name>S3 Snapshot Repository</name>
-			<url>http://maven.sequenceiq.com/snapshots</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
+	<repository>
+		<id>aws-release</id>
+		<name>S3 Release Repository</name>
+		<url>http://maven.sequenceiq.com/release</url>
+		<releases>
+			<enabled>true</enabled>
+		</releases>
+		<snapshots>
+			<enabled>false</enabled>
+		</snapshots>
+	</repository>
+	<repository>
+		<id>aws-snapshots</id>
+		<name>S3 Snapshot Repository</name>
+		<url>http://maven.sequenceiq.com/snapshots</url>
+		<releases>
+			<enabled>false</enabled>
+		</releases>
+		<snapshots>
+			<enabled>true</enabled>
+		</snapshots>
+	</repository>
 	</repositories>
 	<dependencies>
 	<dependency>
