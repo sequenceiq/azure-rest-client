@@ -97,8 +97,8 @@ public class ServiceManagementHelper {
     public static void main(String[] args) throws IOException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
 
 
-        String subscriptionId = "a8b8dac0-2b84-41da-a08b-1e45297e0d2b";
-        String keyStorePath = "//Users//ricsi//prj//WindowsAzureKeyStore.jks";
+        String subscriptionId = "id";
+        String keyStorePath = "//Users//sample//prj//WindowsAzureKeyStore.jks";
         String keyStorePassword = "test123";
         String url = "";
 
