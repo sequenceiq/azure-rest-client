@@ -57,7 +57,7 @@ public class ServiceManagementHelper {
         HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
         con.setSSLSocketFactory(sslFactory);
         con.setRequestMethod("GET");
-        con.addRequestProperty("x-ms-version", "2012-03-01");
+        con.addRequestProperty("x-ms-version", "2014-04-01");
         con.addRequestProperty("ContentType", "application/json");
         InputStream responseStream = (InputStream) con.getContent();
         String response = getStringFromInputStream(responseStream);
