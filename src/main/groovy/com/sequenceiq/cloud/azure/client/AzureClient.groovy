@@ -11,7 +11,7 @@ import javax.xml.stream.XMLStreamException
  * Azure cloud REST client - http://msdn.microsoft.com/library/azure/ee460799.aspx
  */
 class AzureClient {
-    def subscriptionId = "24fe2e16-54ce-4320-8a0f-112278407fcd"
+    def subscriptionId = "id"
     def keyStorePath = "WindowsAzureKeyStore.jks"
     def keyStorePassword = "password"
 
