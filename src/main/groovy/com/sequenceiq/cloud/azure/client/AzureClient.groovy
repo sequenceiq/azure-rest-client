@@ -5,14 +5,13 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter
 import com.thoughtworks.xstream.io.copy.HierarchicalStreamCopier
 import com.thoughtworks.xstream.io.json.JettisonMappedXmlDriver
 import com.thoughtworks.xstream.io.xml.XppReader
-import groovy.json.JsonOutput
-import groovyx.net.http.HTTPBuilder
+import groovyx.net.http.ContentType
 import groovyx.net.http.RESTClient
+import groovy.json.JsonOutput
 import static groovyx.net.http.ContentType.*
 
 import javax.xml.stream.XMLStreamException
 import groovyx.net.http.AuthConfig
-import groovyx.net.http.HttpResponseDecorator
 /**
  * Azure cloud REST client - http://msdn.microsoft.com/library/azure/ee460799.aspx
  */
@@ -81,208 +80,274 @@ class AzureClient extends RESTClient {
         }
 
         // List locations
+        println "Listing all locations:"
         String jsonResponse = client.getLocations()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
-        try {
-            client.createAffinityGroup(
-                    name: 'new-affinity-group',
-                    description: 'new-affinity-group-description',
-                    location: 'East US')
-            println("Created affinitity group successfully")
-        } catch (ex) {
-            // 409: Conflict
-            println(ex.statusCode)
-            println(ex.response.data.Code)
-            println(ex.response.data.Message)
-        }
-
-        try {
-            client.createStorageAccount(
-                    name: 'newstorageaccount',
-                    description: 'newstorageaccount-description',
-                    affinityGroup: 'new-affinity-group'
-            )
-        } catch (ex) {
-            println(ex.statusCode)
-            println(ex.response.data.Code)
-            println(ex.response.data.Message)
-        }
-
-        try {
-            client.createCloudService(
-                    name: 'newservice0123',
-                    description: 'newservice0123-description',
-                    affinityGroup: 'new-affinity-group'
-            )
-        } catch (ex) {
-            println(ex.statusCode)
-            println(ex.response.data.Code)
-            println(ex.response.data.Message)
-        }
-
-        /*
         // List virtual networks
+        println "Listing all virtual networks:"
         jsonResponse = client.getVirtualNetworks()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List storage accounts
+        println "Listing all storage accounts:"
         jsonResponse = client.getStorageAccounts()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List OS images
+        println "Listing all OS images:"
         jsonResponse = client.getOsImages()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List VM Images
+        println "Listing all VM images:"
         jsonResponse = client.getVmImages()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List Disks
+        println "Listing all disks:"
         jsonResponse = client.getDisks()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List Affinity Groups
+        println "Listing all affinity groups:"
         jsonResponse = client.getAffinityGroups()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
 
         // List Cloud Services
+        println "Listing all cloud services:"
         jsonResponse = client.getCloudServices()
         if (jsonResponse != null) {
             println(JsonOutput.prettyPrint(jsonResponse))
         }
-        */
 
-    }
-
-    def get(Map args) {
-        args.contentType = TEXT
-        return convert(super.get(args).data.text)
-    }
-
-    def getLocations() {
-        return get(path: "services/hostedservices")
-    }
-
-    def getVirtualNetworks() {
-        return get(path: "services/networking/virtualnetwork")
-    }
-
-    def getStorageAccounts() {
-        return get(path: "services/storageservices")
     }
 
     /**
-     * name: Storage account names must be between 3 and 24 characters in length and use numbers and lower-case letters only.
+     * Overrides the RESTClient's get method behavior so that we display the output in JSON by default (XML output
+     * can be specified via the extra "format" parameter).
+     * This was needed because the Azure API does not seem to return JSON even though the client sets appropriate
+     * HTTP headers.
      *
-     *<?xml version="1.0" encoding="utf-8"?>
-     * <CreateStorageServiceInput xmlns="http://schemas.microsoft.com/windowsazure">
-     *   <ServiceName>name-of-storage-account</ServiceName>
-     *   <Description>description-of-storage-account</Description>
-     *   <Label>base64-encoded-label</Label>
-     *   <AffinityGroup>name-of-affinity-group</AffinityGroup>
-     *   <Location>location-of-storage-account</Location>
-     *   <GeoReplicationEnabled>geo-replication-indicator</GeoReplicationEnabled>
-     *   <ExtendedProperties>
-     *     <ExtendedProperty>
-     *       <Name>property-name</Name>
-     *       <Value>property-value</Value>
-     *     </ExtendedProperty>
-     *   </ExtendedProperties>
-     *   <SecondaryReadEnabled>secondary-read-indicator</SecondaryReadEnabled>
-     * </CreateStorageServiceInput>
+     * @param args
      */
-    def createStorageAccount(Map args) {
-        return post(
-            path: "services/storageservices",
-            requestContentType: XML,
-            body: {
-                mkp.xmlDeclaration()
-                CreateStorageServiceInput(xmlns: "http://schemas.microsoft.com/windowsazure") {
-                    ServiceName(args.name)
-                    Description(args.description)
-                    Label(args.name.bytes.encodeBase64().toString())
-                    AffinityGroup(args.affinityGroup)
-                }
-            }
-        )
+    def get(Map args) {
+        if (args.format == JSON || args.format == null) {
+            args.contentType = TEXT
+            args.remove('format')
+            return convert(super.get(args).data.text)
+        } else if (args.format == XML) {
+            args.contentType = TEXT
+            args.remove('format')
+            return super.get(args).data.text
+        } else {
+            throw new IllegalArgumentException("Unrecognized format " + args.format)
+        }
     }
 
-    def getOsImages() {
-        return get(path: "services/images")
+    /**
+     * Gets the status of asynchronous requests.
+     *
+     * @param requestId
+     * @return
+     * Succeeded example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"Succeeded","HttpStatusCode":200}}
+     * In Progress example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"InProgress"}}
+     */
+    def getRequestStatus(String requestId) {
+        return get(path: "operations/" + requestId)
     }
 
-    def getVmImages() {
-        return get(path: "services/vmimages")
+    /**
+     * Gets all locations available, such as "West US", "East Asia", etc.
+     */
+    def getLocations() {
+        return get(path: "locations")
     }
 
-    def getDisks() {
-        return get(path: "services/disks")
-    }
-
+    /**
+     * Gets all affinity groups under the subscription.
+     */
     def getAffinityGroups() {
         return get(path: "affinitygroups")
     }
 
     /**
-     * <?xml version="1.0" encoding="utf-8"?>
-     * <CreateAffinityGroup xmlns="http://schemas.microsoft.com/windowsazure">
-     *   <Name>affinity-group-name</Name>
-     *   <Label>base64-encoded-affinity-group-label</Label>
-     *   <Description>affinity-group-description</Description>
-     *   <Location>location</Location>
-     * </CreateAffinityGroup>
-     * @return
+     * Creates an affinity group.
+     * This needs to be created before creating storage accounts, virtual networks, cloud services, virtual machines, and other resources.
+     * @param
+     *   name: the name of the affinity group to create
+     *   description
+     *   location: pick one from the output of getLocations(); e.g., "East US"
      */
     def createAffinityGroup(Map args) {
         return post(
-            path: "affinitygroups",
-            requestContentType: XML,
-            body: {
-                mkp.xmlDeclaration()
-                CreateAffinityGroup(xmlns: "http://schemas.microsoft.com/windowsazure") {
-                    Name(args.name)
-                    Label(args.name.bytes.encodeBase64().toString())
-                    Description(args.description)
-                    Location(args.location)
+                path: "affinitygroups",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    CreateAffinityGroup(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        Name(args.name)
+                        Label(args.name.bytes.encodeBase64().toString())
+                        Description(args.description)
+                        Location(args.location)
+                    }
                 }
-            }
         )
     }
 
+    /**
+     * Gets all virtual network configurations for the subscription.
+     * Used when creating a new virtual network.
+     * @param format: JSON or XML
+     */
+    def getVirtualNetworkConfiguration(ContentType format) {
+        return get(path: "services/networking/media", format: format)
+    }
+
+    /**
+     * Gets all virtual networks under the subscription.
+     * @return
+     */
+    def getVirtualNetworks() {
+        return get(path: "services/networking/virtualnetwork", format: format)
+    }
+
+    /**
+     * Creates a virtual network.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+     *
+     * @param args
+     *   name: required; name of the virtual network to create
+     *   affinityGroup: required
+     *   addressPrefix: required (e.g., 172.16.0.0/16)
+     *   subnetName: required
+     *   subnetAddressPrefix: required (e.g., 172.16.0.0/24)
+     *
+     * @exception
+     *   Duplicate example: <Error xmlns="http://schemas.microsoft.com/windowsazure" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Code>BadRequest</Code><Message>Multiple virtual network sites specified with the same name 'mynew123'.</Message></Error>
+     */
+    def createVirtualNetwork(Map args) {
+        // There is no call to create a new virtual network, so we need to PUT the entire
+        // virtual network configuration.
+
+        // First, retrieve the current config.
+        // Kill everything before < as the extra characters cause XML parsing errors.
+        def currentConfig = getVirtualNetworkConfiguration(XML).replaceFirst('^[^<]*', '')
+
+        println "current config=" + currentConfig
+
+        def root = new XmlParser().parseText(currentConfig)
+
+        // Construct the new virtual network XML node.
+        def newNodeContent = {
+            VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
+                Subnets {
+                    Subnet(name: args.subnetName) {
+                        AddressPrefix(args.subnetAddressPrefix)
+                    }
+                }
+                AddressSpace {
+                    AddressPrefix(args.addressPrefix)
+                }
+            }
+        }
+
+        // Inject the new virtual network XML to the current config.
+        def Node newNode = root.VirtualNetworkConfiguration.VirtualNetworkSites[0].appendNode("")
+        newNode.replaceNode(newNodeContent)
+
+        def writer = new StringWriter();
+        def nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
+        // Must preserve whitespace.  Otherwise the printer adds extraneous spaces and the server barfs on it.
+        nodePrinter.preserveWhitespace = true
+        nodePrinter.print(root)
+        def requestXml = writer.toString()
+
+        return put(
+                path: "services/networking/media",
+                requestContentType: TEXT,
+                body: requestXml
+        )
+    }
+
+    /**
+     * Creates a storage account.
+     *
+     * @param
+     *   name: Required. A name for the storage account that is unique within Azure. Storage account names must be between
+     *   3 and 24 characters in length and use numbers and lower-case letters only.
+     *   This name is the DNS prefix name and can be used to access blobs, queues, and tables in the storage account.
+     *   For example: http://ServiceName.blob.core.windows.net/mycontainer/
+     */
+    def createStorageAccount(Map args) {
+        return post(
+                path: "services/storageservices",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    CreateStorageServiceInput(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        ServiceName(args.name)
+                        Description(args.description)
+                        Label(args.name.bytes.encodeBase64().toString())
+                        AffinityGroup(args.affinityGroup)
+                    }
+                }
+        )
+    }
+
+    /**
+     * Gets all storage accounts under the subscription.
+     * @return
+     */
+    def getStorageAccounts() {
+        return get(path: "services/storageservices")
+    }
+
+    /**
+     * Gets all available OS images that can be used to create disks for new VMs.
+     * @return
+     */
+    def getOsImages() {
+        return get(path: "services/images")
+    }
+
+    /**
+     * Gets all disks under the subscription.
+     */
+    def getDisks() {
+        return get(path: "services/disks")
+    }
+
+    /**
+     * Gets all cloud services under the subscription.
+     */
     def getCloudServices() {
         return get(path: "services/hostedservices")
     }
 
-    /*
-     * <?xml version="1.0" encoding="utf-8"?>
-     * <CreateHostedService xmlns="http://schemas.microsoft.com/windowsazure">
-     *   <ServiceName>name-of-cloud-service</ServiceName>
-     *   <Label>base64-encoded-label-of-cloud-service</Label>
-     *   <Description>description-of-cloud-service</Description>
-     *   <Location>location-of-cloud-service</Location>
-     *   <AffinityGroup>name-of-affinity-group</AffinityGroup>
-     *   <ExtendedProperties>
-     *     <ExtendedProperty>
-     *       <Name>name-of-property</Name>
-     *       <Value>value-of-property</Value>
-     *     </ExtendedProperty>
-     *   </ExtendedProperties>
-     * </CreateHostedService>
+    /**
+     * Creates a cloud service.
+     * Before creating a VM, you need to create a cloud service.
+     * @param
+     *   name: name of the cloud service to create
+     *   description
+     *   affinity group: affinity group to which this cloud service will belong
      */
     def createCloudService(Map args) {
         return post(
@@ -297,6 +362,89 @@ class AzureClient extends RESTClient {
                     AffinityGroup(args.affinityGroup)
                 }
             }
+        )
+    }
+
+    /**
+     * Creates a virtual machine.
+     * @param args
+     *   name: the name of the virtual machine to create
+     *   deploymentSlot: "production" or "staging"
+     *   label
+     *   virtualNetworkName
+     *   imageName: the name of the image from which the disk will be created.  Pick one from the output of getOsImages().
+     *   imageStoreUri: the URI under the blob storage where the disk created from image will be stored (path to a new file)
+     *   hostname
+     *   username: username of the account that gets SSH access
+     *   password: password of the accounts that gets SSH access
+     *   disableSshPasswordAuthentication
+     *   subnetName
+     *   virtualNetworkName
+     *   vmType: specifies the size of the VM.  Can be one of "ExtraSmall", "Small", "Medium", "Large", or "ExtraLarge".
+     */
+    def createVirtualMachine(Map args) {
+        return post(
+                path: String.format("services/hostedservices/%s/deployments", args.name),
+                requestContentType: 'application/atom+xml',
+                body: {
+                    Deployment(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                        Name(args.name)
+                        DeploymentSlot(args.deploymentSlot)
+                        Label(args.label)
+                        RoleList {
+                            Role {
+                                RoleName(args.name)
+                                RoleType('PersistentVMRole')
+                                ConfigurationSets {
+                                    ConfigurationSet {
+                                        ConfigurationSetType('LinuxProvisioningConfiguration')
+                                        HostName(args.hostname)
+                                        UserName(args.username)
+                                        UserPassword(args.password)
+                                        DisableSshPasswordAuthentication(args.disableSshPasswordAuthentication)
+                                        /*
+                                        SSH {
+                                            PublicKeys {
+                                                PublicKey {
+                                                    FingerPrint(args.sshPublicKeyFingerPrint)
+                                                    Path(args.sshPublicKeyPath)
+                                                }
+                                            }
+                                            KeyPairs {
+                                                KeyPair {
+                                                    FingerPrint(args.sshKeyPairFingerPrint)
+                                                    Path(args.sshKeyPairPath)
+                                                }
+                                            }
+                                        }
+                                        */
+                                    }
+                                    ConfigurationSet {
+                                        ConfigurationSetType('NetworkConfiguration')
+                                        InputEndpoints {
+                                            InputEndpoint {
+                                                LocalPort(22)
+                                                Name('ssh')
+                                                Port(22)
+                                                Protocol('tcp')
+                                            }
+                                        }
+                                        SubnetNames {
+                                            SubnetName(args.subnetName)
+                                        }
+                                    }
+
+                                }
+                                OSVirtualHardDisk {
+                                    MediaLink(args.imageStoreUri)
+                                    SourceImageName(args.imageName)
+                                }
+                                RoleSize(args.vmType)
+                            }
+                        }
+                        VirtualNetworkName(args.virtualNetworkName)
+                    }
+                }
         )
     }
 
