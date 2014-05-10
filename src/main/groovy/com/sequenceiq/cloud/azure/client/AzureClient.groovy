@@ -5,13 +5,17 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter
 import com.thoughtworks.xstream.io.copy.HierarchicalStreamCopier
 import com.thoughtworks.xstream.io.json.JettisonMappedXmlDriver
 import com.thoughtworks.xstream.io.xml.XppReader
+import groovy.json.JsonSlurper
 import groovyx.net.http.ContentType
+import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.RESTClient
 import groovy.json.JsonOutput
+
 import static groovyx.net.http.ContentType.*
 
 import javax.xml.stream.XMLStreamException
 import groovyx.net.http.AuthConfig
+
 /**
  * Azure cloud REST client - http://msdn.microsoft.com/library/azure/ee460799.aspx
  */
@@ -22,6 +26,8 @@ class AzureClient extends RESTClient {
     def keyStorePassword = "password"
 
     static final boolean debugEnabled = false;
+
+    def JsonSlurper jsonSlurper = new JsonSlurper()
 
     def AzureClient() {
         AzureClient(subscriptionId, keyStorePath, keyStorePassword)
@@ -143,7 +149,8 @@ class AzureClient extends RESTClient {
      * This was needed because the Azure API does not seem to return JSON even though the client sets appropriate
      * HTTP headers.
      *
-     * @param args
+     * @param args: the same as what's accepted by groovyx.net.http.RESTClient, with an additional format which
+     *   can be JSON or XML.  If format is not supplied, JSON is assumed.
      */
     def get(Map args) {
         if (args.format == JSON || args.format == null) {
@@ -157,6 +164,16 @@ class AzureClient extends RESTClient {
         } else {
             throw new IllegalArgumentException("Unrecognized format " + args.format)
         }
+    }
+
+    def post(Map args) {
+        def HttpResponseDecorator response = super.post(args)
+        // If the server responds with 307 (Temporary Redirect), POST again after a short wait
+        while (response.getStatus() == 307) {
+            sleep(1000)
+            response = super.post(args)
+        }
+        return response
     }
 
     /**
@@ -173,16 +190,18 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all locations available, such as "West US", "East Asia", etc.
+     * @param format: JSON or XML
      */
-    def getLocations() {
-        return get(path: "locations")
+    def getLocations(ContentType format = ContentType.JSON) {
+        return get(path: "locations", format: format)
     }
 
     /**
      * Gets all affinity groups under the subscription.
+     * @param format: JSON or XML
      */
-    def getAffinityGroups() {
-        return get(path: "affinitygroups")
+    def getAffinityGroups(ContentType format = ContentType.JSON) {
+        return get(path: "affinitygroups", format: format)
     }
 
     /**
@@ -210,17 +229,26 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Deletes an affinity group.
+     * @param args
+     *   name: the name of the affinity group to delete.
+     */
+    def deleteAffinityGroup(Map args) {
+        return delete(path: String.format('affinitygroups/%s', args.name))
+    }
+
+    /**
      * Gets all virtual network configurations for the subscription.
      * Used when creating a new virtual network.
      * @param format: JSON or XML
      */
-    def getVirtualNetworkConfiguration(ContentType format) {
+    def getVirtualNetworkConfiguration(ContentType format = ContentType.JSON) {
         return get(path: "services/networking/media", format: format)
     }
 
     /**
      * Gets all virtual networks under the subscription.
-     * @return
+     * @param format: JSON or XML
      */
     def getVirtualNetworks(ContentType format = ContentType.JSON) {
         return get(path: "services/networking/virtualnetwork", format: format)
@@ -250,7 +278,7 @@ class AzureClient extends RESTClient {
         // Kill everything before < as the extra characters cause XML parsing errors.
         def currentConfig = getVirtualNetworkConfiguration(XML).replaceFirst('^[^<]*', '')
 
-        println "current config=" + currentConfig
+        // println "current config=" + currentConfig
 
         def root = new XmlParser().parseText(currentConfig)
 
@@ -287,9 +315,47 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Deletes a virtual network.
+     * @param args
+     *   name: the name of the virtual network to delete.
+     */
+    def deleteVirtualNetwork(Map args) {
+        // There is no call to delete a new virtual network, so we need to PUT the entire
+        // virtual network configuration.
+
+        // First, retrieve the current config.
+        // Kill everything before < as the extra characters cause XML parsing errors.
+        def currentConfig = getVirtualNetworkConfiguration(XML).replaceFirst('^[^<]*', '')
+
+        // println "current config=" + currentConfig
+
+        def root = new XmlParser().parseText(currentConfig)
+
+        // Remove the virtual network XML from the current config.
+        def Node nodeToDelete = root.VirtualNetworkConfiguration.VirtualNetworkSites.VirtualNetworkSite.find { it.@name == args.name }
+        nodeToDelete.parent().remove(nodeToDelete)
+
+        def writer = new StringWriter();
+        def nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
+        // Must preserve whitespace.  Otherwise the printer adds extraneous spaces and the server barfs on it.
+        nodePrinter.preserveWhitespace = true
+        nodePrinter.print(root)
+        def requestXml = writer.toString()
+
+        return put(
+                path: "services/networking/media",
+                requestContentType: TEXT,
+                body: requestXml
+        )
+    }
+
+    /**
      * Creates a storage account.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
      *
-     * @param
+     * @param args
      *   name: Required. A name for the storage account that is unique within Azure. Storage account names must be between
      *   3 and 24 characters in length and use numbers and lower-case letters only.
      *   This name is the DNS prefix name and can be used to access blobs, queues, and tables in the storage account.
@@ -312,33 +378,50 @@ class AzureClient extends RESTClient {
     }
 
     /**
-     * Gets all storage accounts under the subscription.
-     * @return
+     * Deletes a storage account.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+     *
+     * @param args
+     *   name: the name of the storage account to delete.
      */
-    def getStorageAccounts() {
-        return get(path: "services/storageservices")
+    def deleteStorageAccount(Map args) {
+        return delete(path: String.format('services/storageservices/%s', args.name))
+    }
+
+    /**
+     * Gets all storage accounts under the subscription.
+     * @param format: JSON or XML
+     */
+    def getStorageAccounts(ContentType format = ContentType.JSON) {
+        return get(path: "services/storageservices", format: format)
     }
 
     /**
      * Gets all available OS images that can be used to create disks for new VMs.
-     * @return
+     * @param format: JSON or XML
      */
-    def getOsImages() {
-        return get(path: "services/images")
+    def getOsImages(ContentType format = ContentType.JSON) {
+        return get(path: "services/images", format: format)
     }
 
     /**
      * Gets all disks under the subscription.
+     * @param format: JSON or XML
      */
-    def getDisks() {
-        return get(path: "services/disks")
+    def getDisks(ContentType format = ContentType.JSON) {
+        return get(path: "services/disks", format: format)
     }
 
     /**
-     * Gets all cloud services under the subscription.
+     * Deletes a disk.
+     *
+     * @param args
+     *     name: the name of the disk to delete.
      */
-    def getCloudServices() {
-        return get(path: "services/hostedservices")
+    def deleteDisk(Map args) {
+        return delete(path: String.format('services/disks/%s', args.name))
     }
 
     /**
@@ -346,7 +429,15 @@ class AzureClient extends RESTClient {
      * @param format: JSON or XML
      */
     def getVmImages(ContentType format = ContentType.JSON) {
-        return get(path: "services/resourceextensions", format: format)
+        return get(path: "services/vmimages", format: format)
+    }
+
+    /**
+     * Gets all cloud services under the subscription.
+     * @param format: JSON or XML
+     */
+    def getCloudServices(ContentType format = ContentType.JSON) {
+        return get(path: "services/hostedservices", format: format)
     }
 
     /**
@@ -374,7 +465,24 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Deletes a cloud service.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+     *
+     * @param args
+     *   name: the name of the cloud service to delete
+     */
+    def deleteCloudService(Map args) {
+        return delete(path: String.format('services/hostedservices/%s', args.name))
+    }
+
+    /**
      * Creates a virtual machine.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+     *
      * @param args
      *   name: the name of the virtual machine to create
      *   deploymentSlot: "production" or "staging"
@@ -454,6 +562,19 @@ class AzureClient extends RESTClient {
                     }
                 }
         )
+    }
+
+    /**
+     * Deletes a virtual machine.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+     *
+     * @param args
+     *   name: the name of the virtual machine to delete
+     */
+    def deleteVirtualMachine(Map args) {
+        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.name, args.name))
     }
 
     static String convert(String response) throws XMLStreamException, IOException {
