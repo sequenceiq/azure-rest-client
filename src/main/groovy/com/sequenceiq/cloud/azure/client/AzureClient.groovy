@@ -166,12 +166,53 @@ class AzureClient extends RESTClient {
         }
     }
 
-    def post(Map args) {
-        def HttpResponseDecorator response = super.post(args)
+    /**
+     * Overrides the RESTClient's post method behavior so that temporary redirects cause automatic retries.
+     */
+     def post(Map args) {
+        def argsClone = args.clone()
+        log.info 'post original args=' + args
+        def HttpResponseDecorator response = super.post(argsClone)
         // If the server responds with 307 (Temporary Redirect), POST again after a short wait
         while (response.getStatus() == 307) {
             sleep(1000)
-            response = super.post(args)
+            log.info 'post retry args=' + args
+            argsClone = args.clone()
+            response = super.post(argsClone)
+        }
+        return response
+    }
+
+    /**
+     * Overrides the RESTClient's put method behavior so that temporary redirects cause automatic retries.
+     */
+    def put(Map args) {
+        def argsClone = args.clone()
+        log.info 'put original args=' + args
+        def HttpResponseDecorator response = super.put(argsClone)
+        // If the server responds with 307 (Temporary Redirect), POST again after a short wait
+        while (response.getStatus() == 307) {
+            sleep(1000)
+            log.info 'put retry args=' + args
+            argsClone = args.clone()
+            response = super.put(argsClone)
+        }
+        return response
+    }
+
+    /**
+     * Overrides the RESTClient's delete method behavior so that temporary redirects cause automatic retries.
+     */
+    def delete(Map args) {
+        def argsClone = args.clone()
+        log.info 'delete original args=' + args
+        def HttpResponseDecorator response = super.delete(argsClone)
+        // If the server responds with 307 (Temporary Redirect), DELETE again after a short wait
+        while (response.getStatus() == 307) {
+            log.info 'delete retry args=' + args
+            sleep(1000)
+            argsClone = args.clone()
+            response = super.delete(argsClone)
         }
         return response
     }
@@ -186,6 +227,36 @@ class AzureClient extends RESTClient {
      */
     def getRequestStatus(String requestId) {
         return get(path: "operations/" + requestId)
+    }
+
+    def getRequestId(HttpResponseDecorator response) {
+        return response.headers.getAt('x-ms-request-id').value
+    }
+
+    /**
+     * Blocks until the asynchronous request is complete.
+     * @param requestId: the request ID for the asynchronous reqeust to wait on.
+     * @param maxWaitMillis: maximum number of wait time in millis; defaults to 120000ms, or 2 mins.
+     * @return JSON object of the completed operation status; null if the request did not complete in max wait time millis.
+     */
+    def waitUntilComplete(String requestId, int maxWaitMillis = 120000) {
+        def start = new Date().getTime()
+        while (true) {
+            sleep(1000)
+            def statusResponse = getRequestStatus(requestId)
+            // println 'status response=' + statusResponse
+            def status = jsonSlurper.parseText(statusResponse).Operation.Status
+            if (status != 'InProgress') {
+                statusResponse
+                break
+            }
+            def end = new Date().getTime()
+            if (end - start >= maxWaitMillis) {
+                println 'Max wait time ' + maxWaitMillis + ' exceeded.  Exiting.'
+                break
+            }
+        }
+
     }
 
     /**
@@ -333,7 +404,9 @@ class AzureClient extends RESTClient {
 
         // Remove the virtual network XML from the current config.
         def Node nodeToDelete = root.VirtualNetworkConfiguration.VirtualNetworkSites.VirtualNetworkSite.find { it.@name == args.name }
-        nodeToDelete.parent().remove(nodeToDelete)
+        if (nodeToDelete) {
+            nodeToDelete.parent().remove(nodeToDelete)
+        }
 
         def writer = new StringWriter();
         def nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
@@ -474,10 +547,6 @@ class AzureClient extends RESTClient {
 
     /**
      * Deletes a cloud service.
-     * Note that this call is asynchronous.
-     * If there are no validation errors, the server returns 202 (Accepted).
-     * The request status can be checked via getRequestStatus(requestId).
-     *
      * @param args
      *   name: the name of the cloud service to delete
      */
