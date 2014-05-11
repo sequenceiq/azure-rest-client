@@ -514,10 +514,10 @@ class AzureClient extends RESTClient {
     }
 
     /**
-     * Gets all image under the subscription.
+     * Gets all resource extensions under the subscription.
      * @param format: JSON or XML
      */
-    def getVmImages(ContentType format = ContentType.JSON) {
+    def getResourceExtensions(ContentType format = ContentType.JSON) {
         return get(path: "services/resourceextensions", format: format)
     }
 
