@@ -2,7 +2,7 @@ package com.sequenceiq.cloud.azure.client
 
 import spock.lang.Specification
 
-class AzureClientTest extends Specification {
+class AzureClientFunctionalTest extends Specification {
 
     // fill all data if you want to test your changes
     final String subscriptionId = "subscriptionId"
