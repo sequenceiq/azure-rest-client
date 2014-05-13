@@ -5,7 +5,11 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter
 import com.thoughtworks.xstream.io.copy.HierarchicalStreamCopier
 import com.thoughtworks.xstream.io.json.JettisonMappedXmlDriver
 import com.thoughtworks.xstream.io.xml.XppReader
+import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import groovy.xml.StreamingMarkupBuilder
+import groovy.xml.XmlUtil
+import groovyx.net.http.AuthConfig
 import groovyx.net.http.ContentType
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.RESTClient
@@ -15,6 +19,8 @@ import static groovyx.net.http.ContentType.*
 
 import javax.xml.stream.XMLStreamException
 import groovyx.net.http.AuthConfig
+
+import static groovyx.net.http.ContentType.*
 
 /**
  * Azure cloud REST client - http://msdn.microsoft.com/library/azure/ee460799.aspx
@@ -339,7 +345,7 @@ class AzureClient extends RESTClient {
      *   subnetAddressPrefix: required (e.g., 172.16.0.0/24)
      *
      * @exception
-     *   Duplicate example: <Error xmlns="http://schemas.microsoft.com/windowsazure" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Code>BadRequest</Code><Message>Multiple virtual network sites specified with the same name 'mynew123'.</Message></Error>
+     * Duplicate example: <Error xmlns="http://schemas.microsoft.com/windowsazure" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Code>BadRequest</Code><Message>Multiple virtual network sites specified with the same name 'mynew123'.</Message></Error>
      */
     def createVirtualNetwork(Map args) {
         // There is no call to create a new virtual network, so we need to PUT the entire
@@ -347,42 +353,82 @@ class AzureClient extends RESTClient {
 
         // First, retrieve the current config.
         // Kill everything before < as the extra characters cause XML parsing errors.
-        def currentConfig = getVirtualNetworkConfiguration(XML).replaceFirst('^[^<]*', '')
-
-        // println "current config=" + currentConfig
-
-        def root = new XmlParser().parseText(currentConfig)
-
-        // Construct the new virtual network XML node.
-        def newNodeContent = {
-            VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
-                Subnets {
-                    Subnet(name: args.subnetName) {
-                        AddressPrefix(args.subnetAddressPrefix)
-                    }
-                }
-                AddressSpace {
-                    AddressPrefix(args.addressPrefix)
-                }
-            }
+        def currentConfig
+        def root
+        String configs
+        try {
+            configs = getVirtualNetworkConfiguration(XML)
+        } catch (e) {
+            println('Error in the request')
+        }
+        if(configs != null) {
+            currentConfig = configs.replaceFirst('^[^<]*', '')
+            root = new XmlParser().parseText(currentConfig)
         }
 
         // Inject the new virtual network XML to the current config.
-        def Node newNode = root.VirtualNetworkConfiguration.VirtualNetworkSites[0].appendNode("")
-        newNode.replaceNode(newNodeContent)
+        if (root == null || root.VirtualNetworkConfiguration.VirtualNetworkSites[0] == null) {
+            return put(
+                    path: "services/networking/media",
+                    requestContentType: XML,
+                    body: {
+                        NetworkConfiguration ("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration"){
+                            VirtualNetworkConfiguration {
+                                Dns {
+                                    DnsServers {
+                                        DnsServer(name: args.name, IPAddress: "172.16.0.0")
+                                    }
+                                }
+                                VirtualNetworkSites {
+                                    VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
+                                        AddressSpace {
+                                            AddressPrefix(args.addressPrefix)
+                                        }
+                                        Subnets {
+                                            Subnet(name: args.subnetName) {
+                                                AddressPrefix(args.subnetAddressPrefix)
+                                            }
+                                        }
+                                        DnsServersRef {
+                                            DnsServerRef(name: args.name)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+            )
+        } else {
+            // Construct the new virtual network XML node.
+            def newNodeContent = {
+                VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
+                    Subnets {
+                        Subnet(name: args.subnetName) {
+                            AddressPrefix(args.subnetAddressPrefix)
+                        }
+                    }
+                    AddressSpace {
+                        AddressPrefix(args.addressPrefix)
+                    }
+                }
+            }
+            def Node newNode = root.VirtualNetworkConfiguration.VirtualNetworkSites[0].appendNode("")
+            newNode.replaceNode(newNodeContent)
+            return put(
+                    path: "services/networking/media",
+                    requestContentType: TEXT,
+                    body: nodeToXml(root)
+            )
+        }
+    }
 
+    def nodeToXml(def root) {
         def writer = new StringWriter();
         def nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
         // Must preserve whitespace.  Otherwise the printer adds extraneous spaces and the server barfs on it.
         nodePrinter.preserveWhitespace = true
         nodePrinter.print(root)
-        def requestXml = writer.toString()
-
-        return put(
-                path: "services/networking/media",
-                requestContentType: TEXT,
-                body: requestXml
-        )
+        return writer.toString()
     }
 
     /**
@@ -699,7 +745,7 @@ class AzureClient extends RESTClient {
      *   name: the name of the virtual machine to delete
      */
     def deleteVirtualMachine(Map args) {
-        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.name, args.name))
+        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.hostedService, args.name))
     }
 
     static String convert(String response) throws XMLStreamException, IOException {
