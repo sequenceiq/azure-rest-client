@@ -554,6 +554,37 @@ class AzureClient extends RESTClient {
         return delete(path: String.format('services/hostedservices/%s', args.name))
     }
 
+
+    /**
+     * Gets all certificates that belong to a cloud service.
+     * @param name: the name of the cloud service to get certificates for.
+     * @param format
+     * @return
+     */
+    def getServiceCertificates(String name, ContentType format = ContentType.JSON) {
+        return get(path: String.format('services/hostedservices/%s/certificates', name), format: format)
+    }
+
+    /**
+     * Creates a certificate for a cloud service.
+     * @param args
+     *   name: the name of the cloud service to create a certificate for.
+     *   data: the certificate data
+     */
+    def createServiceCertificate(Map args) {
+        return post(
+                path: String.format('services/hostedservices/%s/certificates', args.name),
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    CertificateFile(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        Data(args.data)
+                        CertificateFormat('pfx')
+                    }
+                }
+        )
+    }
+
     /**
      * Creates a virtual machine.
      * Note that this call is asynchronous.
@@ -568,9 +599,18 @@ class AzureClient extends RESTClient {
      *   imageName: the name of the image from which the disk will be created.  Pick one from the output of getOsImages().
      *   imageStoreUri: the URI under the blob storage where the disk created from image will be stored (path to a new file)
      *   hostname
+     *
      *   username: username of the account that gets SSH access
-     *   password: password of the accounts that gets SSH access
-     *   disableSshPasswordAuthentication
+     *   For password-based SSH access, specify "password"; for certificate-based SSH access, specify "sshPublicKeyPath"
+     *   and "sshPublicKeyFingerprint":
+     *     password: password of the accounts that gets SSH access (do not specify this if you want SSH login)
+     *     sshPublicKeyPath:  Specifies the full path of a file, on the Virtual Machine, where the SSH public key is
+     *       stored. If the file already exists, the specified key is appended to the file.
+     *       E.g., /home/azureuser/.ssh/authorized_keys
+     *     sshPublicKeyFingerprint: Specifies the SHA1 fingerprint of an X509 certificate associated with the cloud
+     *       service and includes the SSH public key.  Note that you need to upload the corresponding certificate via
+     *       createServiceCertificate() first.
+     *
      *   subnetName
      *   virtualNetworkName
      *   vmType: specifies the size of the VM.  Can be one of "ExtraSmall", "Small", "Medium", "Large", or "ExtraLarge".
@@ -593,24 +633,28 @@ class AzureClient extends RESTClient {
                                         ConfigurationSetType('LinuxProvisioningConfiguration')
                                         HostName(args.hostname)
                                         UserName(args.username)
-                                        UserPassword(args.password)
-                                        DisableSshPasswordAuthentication(args.disableSshPasswordAuthentication)
-                                        /*
-                                        SSH {
-                                            PublicKeys {
-                                                PublicKey {
-                                                    FingerPrint(args.sshPublicKeyFingerPrint)
-                                                    Path(args.sshPublicKeyPath)
+                                        if (args.password) {
+                                            DisableSshPasswordAuthentication(false)
+                                            UserPassword(args.password)
+                                        } else {
+                                            DisableSshPasswordAuthentication(true)
+                                            SSH {
+                                                PublicKeys {
+                                                    PublicKey {
+                                                        Fingerprint(args.sshPublicKeyFingerprint)
+                                                        Path(args.sshPublicKeyPath)
+                                                    }
                                                 }
-                                            }
-                                            KeyPairs {
-                                                KeyPair {
-                                                    FingerPrint(args.sshKeyPairFingerPrint)
-                                                    Path(args.sshKeyPairPath)
+                                                /*
+                                                KeyPairs {
+                                                    KeyPair {
+                                                        FingerPrint(args.sshKeyPairFingerPrint)
+                                                        Path(args.sshKeyPairPath)
+                                                    }
                                                 }
+                                                */
                                             }
                                         }
-                                        */
                                     }
                                     ConfigurationSet {
                                         ConfigurationSetType('NetworkConfiguration')
