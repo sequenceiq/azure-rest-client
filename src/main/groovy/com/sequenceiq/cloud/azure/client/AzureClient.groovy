@@ -567,6 +567,10 @@ class AzureClient extends RESTClient {
 
     /**
      * Creates a certificate for a cloud service.
+     * Note that this call is asynchronous.
+     * If there are no validation errors, the server returns 202 (Accepted).
+     * The request status can be checked via getRequestStatus(requestId).
+
      * @param args
      *   name: the name of the cloud service to create a certificate for.
      *   data: the certificate data
