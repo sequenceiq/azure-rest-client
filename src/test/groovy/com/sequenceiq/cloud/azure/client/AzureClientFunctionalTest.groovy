@@ -22,7 +22,7 @@ class AzureClientFunctionalTest extends Specification {
 
     def deleteResources() {
         try {
-            azureClient.deleteVirtualMachine(hostedService: String.format("%s-1", clusterName), name: String.format("%s-1", clusterName))
+            azureClient.deleteVirtualMachine(serviceName: String.format("%s-1", clusterName), name: String.format("%s-1", clusterName))
         } catch (e) {
             println('Resource virtual machine not exist: ' + String.format("%s-1", clusterName))
         }
@@ -73,6 +73,7 @@ class AzureClientFunctionalTest extends Specification {
         def label = vmName.bytes.encodeBase64().toString()
         def virtualMachineResponse = azureClient.createVirtualMachine(
                 name: vmName,
+                serviceName: vmName,
                 deploymentSlot: 'production',
                 label: label,
                 imageName: 'c290a6b031d841e09f2da759bbabe71f__Oracle-Linux-6',

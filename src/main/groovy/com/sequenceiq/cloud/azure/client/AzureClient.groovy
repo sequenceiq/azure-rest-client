@@ -607,8 +607,8 @@ class AzureClient extends RESTClient {
      * @param format
      * @return
      */
-    def getServiceCertificates(String name, ContentType format = ContentType.JSON) {
-        return get(path: String.format('services/hostedservices/%s/certificates', name), format: format)
+    def getServiceCertificates(Map args, ContentType format = ContentType.JSON) {
+        return get(path: String.format('services/hostedservices/%s/certificates', args.name), format: format)
     }
 
     /**
@@ -636,12 +636,23 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Gets information on a virtual machine.
+     * @param args
+     *   name: the name of the virtual machine
+     *   serviceName: the name of the cloud service under which the virtual machine exists
+     */
+    def getVirtualMachine(Map args, ContentType format = ContentType.JSON) {
+        return get(path: String.format('services/hostedservices/%s/deployments/%s', args.serviceName, args.name))
+    }
+
+    /**
      * Creates a virtual machine.
      * Note that this call is asynchronous.
      * If there are no validation errors, the server returns 202 (Accepted).
      * The request status can be checked via getRequestStatus(requestId).
      *
      * @param args
+     *   serviceName: the name of the cloud service under which the virtual machine will be created
      *   name: the name of the virtual machine to create
      *   deploymentSlot: "production" or "staging"
      *   label
@@ -664,10 +675,15 @@ class AzureClient extends RESTClient {
      *   subnetName
      *   virtualNetworkName
      *   vmType: specifies the size of the VM.  Can be one of "ExtraSmall", "Small", "Medium", "Large", or "ExtraLarge".
+     *
+     *   ports: specifies the ports to open.  This is specified as an array of maps with the following keys:
+     *     name, port, protocol
+     *     For example, [[name: 'http', port: '80', localPort: '80', protocol: 'tcp'],
+     *                   [name: 'https', port: '443', localPort: '443', protocol: 'tcp']]
      */
     def createVirtualMachine(Map args) {
         return post(
-                path: String.format("services/hostedservices/%s/deployments", args.name),
+                path: String.format("services/hostedservices/%s/deployments", args.serviceName),
                 requestContentType: 'application/atom+xml',
                 body: {
                     Deployment(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
@@ -715,6 +731,14 @@ class AzureClient extends RESTClient {
                                                 Port(22)
                                                 Protocol('tcp')
                                             }
+                                            for (port in args.ports) {
+                                                InputEndpoint {
+                                                    LocalPort(port.localPort)
+                                                    Name(port.name)
+                                                    Port(port.port)
+                                                    Protocol(port.protocol)
+                                                }
+                                            }
                                         }
                                         SubnetNames {
                                             SubnetName(args.subnetName)
@@ -742,10 +766,11 @@ class AzureClient extends RESTClient {
      * The request status can be checked via getRequestStatus(requestId).
      *
      * @param args
+     *   serviceName: the cloud service under which the virtual machine to delete resides.
      *   name: the name of the virtual machine to delete
      */
     def deleteVirtualMachine(Map args) {
-        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.hostedService, args.name))
+        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.serviceName, args.name))
     }
 
     static String convert(String response) throws XMLStreamException, IOException {
