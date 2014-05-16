@@ -368,35 +368,36 @@ class AzureClient extends RESTClient {
 
         // Inject the new virtual network XML to the current config.
         if (root == null || root.VirtualNetworkConfiguration.VirtualNetworkSites[0] == null) {
-            return put(
-                    path: "services/networking/media",
-                    requestContentType: XML,
-                    body: {
-                        NetworkConfiguration ("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration"){
-                            VirtualNetworkConfiguration {
-                                Dns {
-                                    DnsServers {
-                                        DnsServer(name: args.name, IPAddress: "172.16.0.0")
+            def rootContent = {
+                NetworkConfiguration ("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration"){
+                    VirtualNetworkConfiguration {
+                        Dns {
+                            DnsServers {
+                                DnsServer(name: args.name, IPAddress: "172.16.0.0")
+                            }
+                        }
+                        VirtualNetworkSites {
+                            VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
+                                AddressSpace {
+                                    AddressPrefix(args.addressPrefix)
+                                }
+                                Subnets {
+                                    Subnet(name: args.subnetName) {
+                                        AddressPrefix(args.subnetAddressPrefix)
                                     }
                                 }
-                                VirtualNetworkSites {
-                                    VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
-                                        AddressSpace {
-                                            AddressPrefix(args.addressPrefix)
-                                        }
-                                        Subnets {
-                                            Subnet(name: args.subnetName) {
-                                                AddressPrefix(args.subnetAddressPrefix)
-                                            }
-                                        }
-                                        DnsServersRef {
-                                            DnsServerRef(name: args.name)
-                                        }
-                                    }
+                                DnsServersRef {
+                                    DnsServerRef(name: args.name)
                                 }
                             }
                         }
                     }
+                }
+            }
+            return put(
+                    path: "services/networking/media",
+                    requestContentType: TEXT,
+                    body: closureToXml(rootContent)
             )
         } else {
             // Construct the new virtual network XML node.
@@ -420,6 +421,17 @@ class AzureClient extends RESTClient {
                     body: nodeToXml(root)
             )
         }
+    }
+
+    def closureToXml(def closure) {
+        def writer = new StringWriter()
+        def builder = new groovy.xml.MarkupBuilder(writer)
+
+        builder.with {
+            closure.delegate = delegate
+            closure()
+        }
+        return writer.toString()
     }
 
     def nodeToXml(def root) {
