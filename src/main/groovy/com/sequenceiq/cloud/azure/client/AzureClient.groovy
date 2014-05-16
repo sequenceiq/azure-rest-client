@@ -469,6 +469,16 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Validates a storage account name to see if it can be used (not already taken and conforms to the rules).
+     * @param args
+     *   name: the storage account name to check validity for.
+     */
+    def isStorageAccountNameAvailable(Map args, ContentType format = ContentType.JSON) {
+        return get(path: String.format('services/storageservices/operations/isavailable/%s', args.name),
+                format: format)
+    }
+
+    /**
      * Creates a storage account.
      * Note that this call is asynchronous.
      * If there are no validation errors, the server returns 202 (Accepted).
