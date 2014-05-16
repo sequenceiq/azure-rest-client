@@ -343,6 +343,7 @@ class AzureClient extends RESTClient {
      *   addressPrefix: required (e.g., 172.16.0.0/16)
      *   subnetName: required
      *   subnetAddressPrefix: required (e.g., 172.16.0.0/24)
+     *   dnsServerAddress: optional
      *
      * @exception
      * Duplicate example: <Error xmlns="http://schemas.microsoft.com/windowsazure" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Code>BadRequest</Code><Message>Multiple virtual network sites specified with the same name 'mynew123'.</Message></Error>
@@ -361,19 +362,23 @@ class AzureClient extends RESTClient {
         } catch (e) {
             println('Error in the request')
         }
-        if(configs != null) {
+        if (configs != null) {
             currentConfig = configs.replaceFirst('^[^<]*', '')
             root = new XmlParser().parseText(currentConfig)
         }
 
-        // Inject the new virtual network XML to the current config.
-        if (root == null || root.VirtualNetworkConfiguration.VirtualNetworkSites[0] == null) {
+        // Inject the new virtual network XML to the current config, or create a new config if none exists.
+
+        // Case where no configs currently exist
+        if (root == null) {
             def rootContent = {
                 NetworkConfiguration ("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration"){
                     VirtualNetworkConfiguration {
-                        Dns {
-                            DnsServers {
-                                DnsServer(name: args.name, IPAddress: "172.16.0.0")
+                        if (args.dnsServerAddress) {
+                            Dns {
+                                DnsServers {
+                                    DnsServer(name: args.name, IPAddress: args.dnsServerAddress)
+                                }
                             }
                         }
                         VirtualNetworkSites {
@@ -386,8 +391,10 @@ class AzureClient extends RESTClient {
                                         AddressPrefix(args.subnetAddressPrefix)
                                     }
                                 }
-                                DnsServersRef {
-                                    DnsServerRef(name: args.name)
+                                if (args.dnsServerAddress) {
+                                    DnsServersRef {
+                                        DnsServerRef(name: args.name)
+                                    }
                                 }
                             }
                         }
@@ -397,33 +404,43 @@ class AzureClient extends RESTClient {
             return put(
                     path: "services/networking/media",
                     requestContentType: TEXT,
-                    body: closureToXml(rootContent)
-            )
-        } else {
-            // Construct the new virtual network XML node.
-            def newNodeContent = {
-                VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
-                    Subnets {
-                        Subnet(name: args.subnetName) {
-                            AddressPrefix(args.subnetAddressPrefix)
-                        }
-                    }
-                    AddressSpace {
-                        AddressPrefix(args.addressPrefix)
-                    }
-                }
-            }
-            def Node newNode = root.VirtualNetworkConfiguration.VirtualNetworkSites[0].appendNode("")
-            newNode.replaceNode(newNodeContent)
-            return put(
-                    path: "services/networking/media",
-                    requestContentType: TEXT,
-                    body: nodeToXml(root)
+                    body: closureToXmlString(rootContent)
             )
         }
+
+        def newNodeContent
+
+        // Case where a virtual network config already exists
+        // Construct the new virtual network site XML node.
+        newNodeContent = {
+            VirtualNetworkSite(name: args.name, AffinityGroup: args.affinityGroup) {
+                Subnets {
+                    Subnet(name: args.subnetName) {
+                        AddressPrefix(args.subnetAddressPrefix)
+                    }
+                }
+                AddressSpace {
+                    AddressPrefix(args.addressPrefix)
+                }
+            }
+        }
+        // Add VirtualNetworkSites tag if no virtual networks currently exist (this can happen if there's a DNS
+        // defined but no virtual networks are defined, etc.)
+        if (root.VirtualNetworkConfiguration.VirtualNetworkSites[0] == null) {
+            root.VirtualNetworkConfiguration[0].appendNode("VirtualNetworkSites")
+        }
+        println 'current root=' + nodeToXmlString(root)
+        // Add the new VirtualNetworkSite tag
+        def Node newNode = root.VirtualNetworkConfiguration.VirtualNetworkSites[0].appendNode("")
+        newNode.replaceNode(newNodeContent)
+        return put(
+                path: "services/networking/media",
+                requestContentType: TEXT,
+                body: nodeToXmlString(root)
+        )
     }
 
-    def closureToXml(def closure) {
+    def closureToXmlString(def closure) {
         def writer = new StringWriter()
         def builder = new groovy.xml.MarkupBuilder(writer)
 
@@ -434,7 +451,7 @@ class AzureClient extends RESTClient {
         return writer.toString()
     }
 
-    def nodeToXml(def root) {
+    def nodeToXmlString(def root) {
         def writer = new StringWriter();
         def nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
         // Must preserve whitespace.  Otherwise the printer adds extraneous spaces and the server barfs on it.
