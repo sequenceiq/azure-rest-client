@@ -282,6 +282,15 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Gets one affinity group under the subscription.
+     * @param format: JSON or XML
+     * @param name: name of affinity group
+     */
+    def getAffinityGroup(String name, ContentType format = ContentType.JSON) {
+        return get(path: "affinitygroups/" + name, format: format)
+    }
+
+    /**
      * Creates an affinity group.
      * This needs to be created before creating storage accounts, virtual networks, cloud services, virtual machines, and other resources.
      * @param
@@ -557,6 +566,15 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Gets all storage accounts under the subscription.
+     * @param format: JSON or XML
+     * @param name: storage name
+     */
+    def getStorageAccount(String name, ContentType format = ContentType.JSON) {
+        return get(path: "services/storageservices/" + name, format: format)
+    }
+
+    /**
      * Gets all available OS images that can be used to create disks for new VMs.
      * @param format: JSON or XML
      */
@@ -596,6 +614,24 @@ class AzureClient extends RESTClient {
      */
     def getCloudServices(ContentType format = ContentType.JSON) {
         return get(path: "services/hostedservices", format: format)
+    }
+
+    /**
+     * Gets one cloud service under the subscription.
+     * @param format: JSON or XML
+     * @param name: name of te cloud service
+     */
+    def getCloudService(String name, ContentType format = ContentType.JSON) {
+        return get(path: "services/hostedservices/" + name, format: format)
+    }
+
+    /**
+     * Gets one cloud service under the subscription.
+     * @param format: JSON or XML
+     * @param name: name of te cloud service
+     */
+    def getDeployment(String cloudServiceName, String deploymentName, ContentType format = ContentType.JSON) {
+        return get(path: "services/hostedservices/" + cloudServiceName + "/deployments/" + deploymentName, format: format)
     }
 
     /**
