@@ -626,15 +626,6 @@ class AzureClient extends RESTClient {
     }
 
     /**
-     * Gets one cloud service under the subscription.
-     * @param format: JSON or XML
-     * @param name: name of te cloud service
-     */
-    def getDeployment(String cloudServiceName, String deploymentName, ContentType format = ContentType.JSON) {
-        return get(path: "services/hostedservices/" + cloudServiceName + "/deployments/" + deploymentName, format: format)
-    }
-
-    /**
      * Gets all resource extensions under the subscription.
      * @param format: JSON or XML
      */
