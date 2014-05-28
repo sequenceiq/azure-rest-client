@@ -574,12 +574,49 @@ class AzureClient extends RESTClient {
         return get(path: "services/storageservices/" + name, format: format)
     }
 
+
+    /**
+     * Gets the key for the specified storage account.
+     * The key can be used to make calls against the Azure Blob Management API.
+     * @param args
+     *   name: the name of the storage account to retrieve keys for.
+     * @param format
+     * @return
+     */
+    def getStorageAccountKeys(Map args, ContentType format = ContentType.JSON) {
+        return get(path: String.format("services/storageservices/%s/keys", args.name))
+    }
+
     /**
      * Gets all available OS images that can be used to create disks for new VMs.
      * @param format: JSON or XML
      */
     def getOsImages(ContentType format = ContentType.JSON) {
         return get(path: "services/images", format: format)
+    }
+
+
+    /**
+     * Adds an operating system image to the image repository that is associated with the specified subscription.
+     * @param args
+     *   name: the name of the image.
+     *   mediaLink: the URI of the .vhd file for the image.
+     *   os: "Windows" or "Linux"
+     */
+    def addOsImage(Map args) {
+        return post(
+                path: "services/images",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    OSImage(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        Label(args.name)
+                        MediaLink(args.mediaLink)
+                        Name(args.name)
+                        OS(args.os)
+                    }
+                }
+        )
     }
 
     /**
