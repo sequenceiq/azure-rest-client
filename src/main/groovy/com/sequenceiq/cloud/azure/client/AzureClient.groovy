@@ -200,7 +200,7 @@ class AzureClient extends RESTClient {
     /**
      * Overrides the RESTClient's delete method behavior so that temporary redirects cause automatic retries.
      */
-    def delete(Map args) throws HttpResponseException{
+    def delete(Map args) throws HttpResponseException {
         def argsClone = args.clone()
         log.info 'delete original args=' + args
         def HttpResponseDecorator response = super.delete(argsClone)
@@ -313,7 +313,7 @@ class AzureClient extends RESTClient {
      * @param args
      *   name: the name of the affinity group to delete.
      */
-    def deleteAffinityGroup(Map args) {
+    def deleteAffinityGroup(Map args) throws HttpResponseException {
         return delete(path: String.format('affinitygroups/%s', args.name))
     }
 
@@ -468,7 +468,7 @@ class AzureClient extends RESTClient {
      * @param args
      *   name: the name of the virtual network to delete.
      */
-    def deleteVirtualNetwork(Map args) {
+    def deleteVirtualNetwork(Map args) throws HttpResponseException {
         // There is no call to delete a new virtual network, so we need to PUT the entire
         // virtual network configuration.
 
@@ -547,7 +547,7 @@ class AzureClient extends RESTClient {
      * @param args
      *   name: the name of the storage account to delete.
      */
-    def deleteStorageAccount(Map args) {
+    def deleteStorageAccount(Map args) throws HttpResponseException {
         return delete(path: String.format('services/storageservices/%s', args.name))
     }
 
@@ -627,7 +627,7 @@ class AzureClient extends RESTClient {
      * @param args
      *     name: the name of the disk to delete.
      */
-    def deleteDisk(Map args) {
+    def deleteDisk(Map args) throws HttpResponseException {
         return delete(path: String.format('services/disks/%s', args.name))
     }
 
@@ -693,7 +693,7 @@ class AzureClient extends RESTClient {
      * @param args
      *   name: the name of the cloud service to delete
      */
-    def deleteCloudService(Map args) {
+    def deleteCloudService(Map args) throws HttpResponseException {
         return delete(path: String.format('services/hostedservices/%s', args.name))
     }
 
@@ -866,7 +866,7 @@ class AzureClient extends RESTClient {
      *   serviceName: the cloud service under which the virtual machine to delete resides.
      *   name: the name of the virtual machine to delete
      */
-    def deleteVirtualMachine(Map args) {
+    def deleteVirtualMachine(Map args) throws HttpResponseException {
         return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.serviceName, args.name))
     }
 
