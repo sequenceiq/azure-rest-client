@@ -7,18 +7,9 @@ import com.thoughtworks.xstream.io.json.JettisonMappedXmlDriver
 import com.thoughtworks.xstream.io.xml.XppReader
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.xml.StreamingMarkupBuilder
-import groovy.xml.XmlUtil
-import groovyx.net.http.AuthConfig
-import groovyx.net.http.ContentType
-import groovyx.net.http.HttpResponseDecorator
-import groovyx.net.http.RESTClient
-import groovy.json.JsonOutput
-
-import static groovyx.net.http.ContentType.*
+import groovyx.net.http.*
 
 import javax.xml.stream.XMLStreamException
-import groovyx.net.http.AuthConfig
 
 import static groovyx.net.http.ContentType.*
 
@@ -213,6 +204,9 @@ class AzureClient extends RESTClient {
         def argsClone = args.clone()
         log.info 'delete original args=' + args
         def HttpResponseDecorator response = super.delete(argsClone)
+        if(response.getStatus() == 404) {
+            throw new HttpResponseException("Resource not found");
+        }
         // If the server responds with 307 (Temporary Redirect), DELETE again after a short wait
         while (response.getStatus() == 307) {
             log.info 'delete retry args=' + args
