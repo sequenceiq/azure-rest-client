@@ -200,7 +200,7 @@ class AzureClient extends RESTClient {
     /**
      * Overrides the RESTClient's delete method behavior so that temporary redirects cause automatic retries.
      */
-    def delete(Map args) {
+    def delete(Map args) throws HttpResponseException{
         def argsClone = args.clone()
         log.info 'delete original args=' + args
         def HttpResponseDecorator response = super.delete(argsClone)
