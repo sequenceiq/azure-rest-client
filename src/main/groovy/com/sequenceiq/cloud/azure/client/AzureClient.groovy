@@ -797,8 +797,8 @@ class AzureClient extends RESTClient {
                                         HostName(args.hostname)
                                         UserName(args.username)
                                         if (args.password) {
-                                            DisableSshPasswordAuthentication(false)
                                             UserPassword(args.password)
+                                            DisableSshPasswordAuthentication(false)
                                         } else {
                                             DisableSshPasswordAuthentication(true)
                                             SSH {

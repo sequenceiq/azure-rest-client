@@ -1,5 +1,4 @@
 package com.sequenceiq.cloud.azure.client
-
 import spock.lang.Specification
 
 class AzureClientFunctionalTest extends Specification {
@@ -9,7 +8,7 @@ class AzureClientFunctionalTest extends Specification {
     final String keyStorePath = "keyStorePath"
     final String keyStorePassword = "keyStorePassword"
     final Random rand = new Random()
-    final String clusterName = "test" + rand.nextInt(Integer.MAX_VALUE)
+    final String clusterName = "test" + rand.nextInt(9999)
     AzureClient azureClient
 
     def setup() {
@@ -70,15 +69,15 @@ class AzureClientFunctionalTest extends Specification {
         def cloudServiceResponse = azureClient.createCloudService(name: vmName, description: 'Created by ' + clusterName, affinityGroup: clusterName)
         requestId = azureClient.getRequestId(cloudServiceResponse)
         azureClient.waitUntilComplete(requestId)
-        def label = vmName.bytes.encodeBase64().toString()
+        def label = (vmName + "12").bytes.encodeBase64().toString()
         def virtualMachineResponse = azureClient.createVirtualMachine(
-                name: vmName,
+                name: vmName + "12",
                 serviceName: vmName,
                 deploymentSlot: 'production',
                 label: label,
                 imageName: 'c290a6b031d841e09f2da759bbabe71f__Oracle-Linux-6',
-                imageStoreUri: String.format('http://%s.blob.core.windows.net/vhd-store/%s.vhd', clusterName, vmName),
-                hostname: vmName,
+                imageStoreUri: String.format("http://" + clusterName + ".blob.core.windows.net/vhd-store/" + vmName + ".vhd"),
+                hostname:  vmName + "12",
                 username: 'azureuser',
                 password: 'Password!@#$',
                 disableSshPasswordAuthentication: false,
