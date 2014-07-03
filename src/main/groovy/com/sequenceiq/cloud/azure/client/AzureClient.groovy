@@ -817,6 +817,9 @@ class AzureClient extends RESTClient {
                                                 }
                                                 */
                                             }
+                                            if (args.customData) {
+                                                CustomData(args.customData)
+                                            }
                                         }
                                     }
                                     ConfigurationSet {
