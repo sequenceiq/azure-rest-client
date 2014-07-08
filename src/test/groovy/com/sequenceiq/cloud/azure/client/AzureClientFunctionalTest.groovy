@@ -1,15 +1,19 @@
 package com.sequenceiq.cloud.azure.client
+import groovy.json.JsonSlurper
+import groovyx.net.http.HttpResponseDecorator
+import spock.lang.Ignore
 import spock.lang.Specification
 
 class AzureClientFunctionalTest extends Specification {
 
     // fill all data if you want to test your changes
-    final String subscriptionId = "subscriptionId"
-    final String keyStorePath = "keyStorePath"
-    final String keyStorePassword = "keyStorePassword"
+    final String subscriptionId = "0079fa95-bd0c-47d7-9c55-6a7b0fc7e418"
+    final String keyStorePath = "/Users/ricsi/prj/cloudbreak/userdatas/cbuser_sequenceiq_com/certificate/51/cbuser_sequenceiq_com.jks"
+    final String keyStorePassword = "test123"
     final Random rand = new Random()
+    final JsonSlurper jsonSlurper = new JsonSlurper()
     final String clusterName = "test" + rand.nextInt(9999)
-    AzureClient azureClient
+     AzureClient azureClient
 
     def setup() {
         azureClient = new AzureClient(subscriptionId, keyStorePath, keyStorePassword)
@@ -47,6 +51,31 @@ class AzureClientFunctionalTest extends Specification {
         }
     }
 
+    void "test image creation"() {
+        when:
+            def baseImageUri = 'http://vmdepoteastus.blob.core.windows.net/linux-community-store/community-62091-a59dcdc1-d82d-4e76-9094-27b8c018a4a1-1.vhd'
+            def osImageName = 'seqambdocker'
+            def nameI = clusterName
+            azureClient.createAffinityGroup( name: nameI, description: nameI, location: 'East US')
+            def HttpResponseDecorator response = azureClient.createStorageAccount(name: nameI, description: 'Created by ' + nameI, affinityGroup: nameI)
+            azureClient.waitUntilComplete(azureClient.getRequestId(response))
+            def targetBlobContainerUri = 'http://' + nameI + '.blob.core.windows.net/vm-images'
+            def targetImageUri = targetBlobContainerUri + '/' + nameI + '.vhd'
+            def keyJson = azureClient.getStorageAccountKeys(name: nameI)
+            def storageAccountKey = jsonSlurper.parseText(keyJson).StorageService.StorageServiceKeys.Primary
+
+            //Create the blob container to hold the image copy
+            AzureClientUtil.createBlobContainer(storageAccountKey, targetBlobContainerUri)
+
+            // Copy the public os image to the storage account
+            AzureClientUtil.copyOsImage(storageAccountKey, baseImageUri, targetImageUri)
+            AzureClientUtil.imageCopyProgress(storageAccountKey, targetImageUri)
+            azureClient.addOsImage('name': osImageName, 'mediaLink': targetImageUri, 'os': 'Linux')
+        then:
+            assert true == true
+    }
+
+    @Ignore
     void "T001: create all resource end to end"() {
         when:
         println("The cluster name will be:" + clusterName)
