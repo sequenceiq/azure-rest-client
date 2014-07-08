@@ -7,9 +7,9 @@ import spock.lang.Specification
 class AzureClientFunctionalTest extends Specification {
 
     // fill all data if you want to test your changes
-    final String subscriptionId = "0079fa95-bd0c-47d7-9c55-6a7b0fc7e418"
-    final String keyStorePath = "/Users/ricsi/prj/cloudbreak/userdatas/cbuser_sequenceiq_com/certificate/51/cbuser_sequenceiq_com.jks"
-    final String keyStorePassword = "test123"
+    final String subscriptionId = "sdsdfdfs"
+    final String keyStorePath = "sdfsdf"
+    final String keyStorePassword = "ssdfsdfsdf"
     final Random rand = new Random()
     final JsonSlurper jsonSlurper = new JsonSlurper()
     final String clusterName = "test" + rand.nextInt(9999)
@@ -51,6 +51,14 @@ class AzureClientFunctionalTest extends Specification {
         }
     }
 
+    void "test image available"() {
+        when:
+            boolean result = azureClient.isImageAvailable('seqambdocker')
+        then:
+            result == true
+    }
+
+    @Ignore
     void "test image creation"() {
         when:
             def baseImageUri = 'http://vmdepoteastus.blob.core.windows.net/linux-community-store/community-62091-a59dcdc1-d82d-4e76-9094-27b8c018a4a1-1.vhd'

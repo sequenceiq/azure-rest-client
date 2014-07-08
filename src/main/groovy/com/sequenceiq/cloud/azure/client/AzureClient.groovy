@@ -284,6 +284,10 @@ class AzureClient extends RESTClient {
         return get(path: "affinitygroups/" + name, format: format)
     }
 
+    boolean isImageAvailable(String imageName) {
+        return getOsImages().contains(imageName);
+    }
+
     /**
      * Creates an affinity group.
      * This needs to be created before creating storage accounts, virtual networks, cloud services, virtual machines, and other resources.
