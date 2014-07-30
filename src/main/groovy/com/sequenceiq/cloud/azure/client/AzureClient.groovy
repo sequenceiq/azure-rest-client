@@ -812,14 +812,14 @@ class AzureClient extends RESTClient {
                                                         Path(args.sshPublicKeyPath)
                                                     }
                                                 }
-                                                /*
+
                                                 KeyPairs {
                                                     KeyPair {
                                                         FingerPrint(args.sshKeyPairFingerPrint)
                                                         Path(args.sshKeyPairPath)
                                                     }
                                                 }
-                                                */
+
                                             }
                                             if (args.customData) {
                                                 CustomData(args.customData)
@@ -861,6 +861,66 @@ class AzureClient extends RESTClient {
                     }
                 }
         )
+    }
+
+
+    def addRole(Map args) {
+            return post(
+                    path: String.format("services/hostedservices/%s/deployments/%s/roles", args.serviceName, args.depname),
+                    requestContentType: 'application/xml',
+                    body: {
+                        PersistentVMRole(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                            RoleName(args.name)
+                            RoleType('PersistentVMRole')
+                            ConfigurationSets {
+                                ConfigurationSet {
+                                    ConfigurationSetType('LinuxProvisioningConfiguration')
+                                    HostName(args.hostname)
+                                    UserName(args.username)
+                                    if (args.password) {
+                                        UserPassword(args.password)
+                                        DisableSshPasswordAuthentication(false)
+                                    } else {
+                                        DisableSshPasswordAuthentication(true)
+                                        SSH {
+                                            PublicKeys {
+                                                PublicKey {
+                                                    Fingerprint(args.sshPublicKeyFingerprint)
+                                                    Path(args.sshPublicKeyPath)
+                                                }
+                                            }
+                                            /*
+                                KeyPairs {
+                                    KeyPair {
+                                        FingerPrint(args.sshKeyPairFingerPrint)
+                                        Path(args.sshKeyPairPath)
+                                    }
+                                }
+                                */
+                                        }
+                                        if (args.customData) {
+                                            CustomData(args.customData)
+                                        }
+                                    }
+                                }
+                                ConfigurationSet {
+                                    ConfigurationSetType('NetworkConfiguration')
+
+                                    SubnetNames {
+                                        SubnetName(args.subnetName)
+                                    }
+                                }
+
+                            }
+                            OSVirtualHardDisk {
+                                MediaLink(args.imageStoreUri)
+                                SourceImageName(args.imageName)
+                            }
+                            RoleSize(args.vmType)
+                        }
+                    }
+            )
+
     }
 
     /**
