@@ -813,12 +813,12 @@ class AzureClient extends RESTClient {
                                                     }
                                                 }
 
-                                                KeyPairs {
+                                               /* KeyPairs {
                                                     KeyPair {
                                                         FingerPrint(args.sshKeyPairFingerPrint)
                                                         Path(args.sshKeyPairPath)
                                                     }
-                                                }
+                                                }*/
 
                                             }
                                             if (args.customData) {
