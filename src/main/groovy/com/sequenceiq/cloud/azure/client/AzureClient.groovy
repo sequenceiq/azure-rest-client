@@ -847,6 +847,9 @@ class AzureClient extends RESTClient {
                                         SubnetNames {
                                             SubnetName(args.subnetName)
                                         }
+                                        if (args.virtualNetworkIPAddress) {
+                                            StaticVirtualNetworkIPAddress(args.virtualNetworkIPAddress)
+                                        }
                                     }
 
                                 }
