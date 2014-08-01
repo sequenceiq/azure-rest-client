@@ -853,6 +853,17 @@ class AzureClient extends RESTClient {
                                     }
 
                                 }
+                                if (args.disks) {
+                                    DataVirtualHardDisks {
+                                        for (int i = 0; i < args.disks.size; i++) {
+                                            DataVirtualHardDisk {
+                                                Lun(i)
+                                                LogicalDiskSizeInGB(args.disks[i])
+                                                MediaLink("http://${args.virtualNetworkName}.blob.core.windows.net/vhd-store/${args.virtualNetworkName}-0${i}.vhd")
+                                            }
+                                        }
+                                    }
+                                }
                                 OSVirtualHardDisk {
                                     MediaLink(args.imageStoreUri)
                                     SourceImageName(args.imageName)
