@@ -21,6 +21,7 @@ class AzureClient extends RESTClient {
     def subscriptionId = "id"
     def keyStorePath = "WindowsAzureKeyStore.jks"
     def keyStorePassword = "password"
+    static final char[] letters = ["f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
 
     static final boolean debugEnabled = false;
 
@@ -859,7 +860,7 @@ class AzureClient extends RESTClient {
                                             DataVirtualHardDisk {
                                                 Lun(i)
                                                 LogicalDiskSizeInGB(args.disks[i])
-                                                MediaLink("http://${args.virtualNetworkName}.blob.core.windows.net/vhd-store/${args.virtualNetworkName}-0${i}.vhd")
+                                                MediaLink("http://${args.affinityGroup}.blob.core.windows.net/vhd-store/${args.name}-0${i}.vhd")
                                             }
                                         }
                                     }
