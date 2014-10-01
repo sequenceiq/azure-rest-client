@@ -748,6 +748,44 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Stops the given virtual machine. It also deallocates the resources used by the vm, so Azure won't bill
+     * for this vm while it is stopped.
+     *
+     * @param args
+     *   name: the name of the virtual machine
+     *   serviceName: the name of the cloud service under which the virtual machine exists
+     */
+    def stopVirtualMachine(Map args) {
+        return post(
+                path: String.format("services/hostedservices/%s/deployments/%s/roleinstances/%s/Operations", args.serviceName, args.name, args.name),
+                requestContentType: 'application/atom+xml',
+                body: {
+                    ShutdownRoleOperation(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                        OperationType("ShutdownRoleOperation")
+                        PostShutdownAction("StoppedDeallocated")
+                    }
+                })
+    }
+
+    /**
+     * Starts the given virtual machine.
+     *
+     * @param args
+     *   name: the name of the virtual machine
+     *   serviceName: the name of the cloud service under which the virtual machine exists
+     */
+    def startVirtualMachine(Map args) {
+        return post(
+                path: String.format("services/hostedservices/%s/deployments/%s/roleinstances/%s/Operations", args.serviceName, args.name, args.name),
+                requestContentType: 'application/atom+xml',
+                body: {
+                    StartRoleOperation(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                        OperationType("StartRoleOperation")
+                    }
+                })
+    }
+
+    /**
      * Creates a virtual machine.
      * Note that this call is asynchronous.
      * If there are no validation errors, the server returns 202 (Accepted).
