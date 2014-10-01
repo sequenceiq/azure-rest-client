@@ -1,4 +1,5 @@
 package com.sequenceiq.cloud.azure.client
+
 import groovy.json.JsonSlurper
 import groovyx.net.http.HttpResponseDecorator
 import spock.lang.Ignore
@@ -13,7 +14,7 @@ class AzureClientFunctionalTest extends Specification {
     final Random rand = new Random()
     final JsonSlurper jsonSlurper = new JsonSlurper()
     final String clusterName = "test" + rand.nextInt(9999)
-     AzureClient azureClient
+    AzureClient azureClient
 
     def setup() {
         azureClient = new AzureClient(subscriptionId, keyStorePath, keyStorePassword)
@@ -51,36 +52,61 @@ class AzureClientFunctionalTest extends Specification {
         }
     }
 
+    @Ignore
     void "test image available"() {
         when:
-            boolean result = azureClient.isImageAvailable('seqambdocker')
+        boolean result = azureClient.isImageAvailable('seqambdocker')
         then:
-            result == true
+        result == true
+    }
+
+    @Ignore
+    void "test instance stopping with resource deallocation"() {
+        when:
+        def vm = "start-stop-test-11412153225036-11412153269963"
+        def context = ["serviceName": vm,
+                       "name"       : vm]
+        azureClient.stopVirtualMachine(context)
+
+        then:
+        noExceptionThrown()
+    }
+
+    @Ignore
+    void "test instance start"() {
+        when:
+        def vm = "start-stop-test-11412153225036-01412153233868"
+        def context = ["serviceName": vm,
+                       "name"       : vm]
+        azureClient.startVirtualMachine(context)
+
+        then:
+        noExceptionThrown()
     }
 
     @Ignore
     void "test image creation"() {
         when:
-            def baseImageUri = 'http://vmdepoteastus.blob.core.windows.net/linux-community-store/community-62091-a59dcdc1-d82d-4e76-9094-27b8c018a4a1-1.vhd'
-            def osImageName = 'seqambdocker'
-            def nameI = clusterName
-            azureClient.createAffinityGroup( name: nameI, description: nameI, location: 'East US')
-            def HttpResponseDecorator response = azureClient.createStorageAccount(name: nameI, description: 'Created by ' + nameI, affinityGroup: nameI)
-            azureClient.waitUntilComplete(azureClient.getRequestId(response))
-            def targetBlobContainerUri = 'http://' + nameI + '.blob.core.windows.net/vm-images'
-            def targetImageUri = targetBlobContainerUri + '/' + nameI + '.vhd'
-            def keyJson = azureClient.getStorageAccountKeys(name: nameI)
-            def storageAccountKey = jsonSlurper.parseText(keyJson).StorageService.StorageServiceKeys.Primary
+        def baseImageUri = 'http://vmdepoteastus.blob.core.windows.net/linux-community-store/community-62091-a59dcdc1-d82d-4e76-9094-27b8c018a4a1-1.vhd'
+        def osImageName = 'seqambdocker'
+        def nameI = clusterName
+        azureClient.createAffinityGroup(name: nameI, description: nameI, location: 'East US')
+        def HttpResponseDecorator response = azureClient.createStorageAccount(name: nameI, description: 'Created by ' + nameI, affinityGroup: nameI)
+        azureClient.waitUntilComplete(azureClient.getRequestId(response))
+        def targetBlobContainerUri = 'http://' + nameI + '.blob.core.windows.net/vm-images'
+        def targetImageUri = targetBlobContainerUri + '/' + nameI + '.vhd'
+        def keyJson = azureClient.getStorageAccountKeys(name: nameI)
+        def storageAccountKey = jsonSlurper.parseText(keyJson).StorageService.StorageServiceKeys.Primary
 
-            //Create the blob container to hold the image copy
-            AzureClientUtil.createBlobContainer(storageAccountKey, targetBlobContainerUri)
+        //Create the blob container to hold the image copy
+        AzureClientUtil.createBlobContainer(storageAccountKey, targetBlobContainerUri)
 
-            // Copy the public os image to the storage account
-            AzureClientUtil.copyOsImage(storageAccountKey, baseImageUri, targetImageUri)
-            AzureClientUtil.imageCopyProgress(storageAccountKey, targetImageUri)
-            azureClient.addOsImage('name': osImageName, 'mediaLink': targetImageUri, 'os': 'Linux')
+        // Copy the public os image to the storage account
+        AzureClientUtil.copyOsImage(storageAccountKey, baseImageUri, targetImageUri)
+        AzureClientUtil.imageCopyProgress(storageAccountKey, targetImageUri)
+        azureClient.addOsImage('name': osImageName, 'mediaLink': targetImageUri, 'os': 'Linux')
         then:
-            assert true == true
+        assert true == true
     }
 
     @Ignore
@@ -114,7 +140,7 @@ class AzureClientFunctionalTest extends Specification {
                 label: label,
                 imageName: 'c290a6b031d841e09f2da759bbabe71f__Oracle-Linux-6',
                 imageStoreUri: String.format("http://" + clusterName + ".blob.core.windows.net/vhd-store/" + vmName + ".vhd"),
-                hostname:  vmName + "12",
+                hostname: vmName + "12",
                 username: 'azureuser',
                 password: 'Password!@#$',
                 disableSshPasswordAuthentication: false,
