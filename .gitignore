@@ -5,4 +5,10 @@ target
 lib
 .idea/
 *.iml
+target/
+atlassian*
+.gradle/
+build/
+build
+.gradle
 .DS_Store
