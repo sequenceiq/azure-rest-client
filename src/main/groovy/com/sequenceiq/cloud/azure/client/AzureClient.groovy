@@ -748,6 +748,17 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Returns the state of the virtual machine.
+     *
+     * @param args
+     *   name: the name of the virtual machine
+     *   serviceName: the name of the cloud service under which the virtual machine exists
+     */
+    String getVirtualMachineState(Map args) {
+        jsonSlurper.parseText(getVirtualMachine(args)).Deployment.Status
+    }
+
+    /**
      * Stops the given virtual machine. It also deallocates the resources used by the vm, so Azure won't bill
      * for this vm while it is stopped.
      *
