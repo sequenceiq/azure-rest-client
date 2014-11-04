@@ -633,7 +633,7 @@ class AzureClient extends RESTClient {
      *     name: the name of the disk to delete.
      */
     def deleteDisk(Map args) throws HttpResponseException {
-        return delete(path: String.format('services/disks/%s', args.name))
+        return delete(path: String.format('services/disks/%s?comp=media', args.name))
     }
 
     /**
