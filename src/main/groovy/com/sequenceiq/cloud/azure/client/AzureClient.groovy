@@ -240,7 +240,7 @@ class AzureClient extends RESTClient {
      * @param maxWaitMillis: maximum number of wait time in millis; defaults to 120000ms, or 2 mins.
      * @return JSON object of the completed operation status; null if the request did not complete in max wait time millis.
      */
-    def waitUntilComplete(String requestId, int maxWaitMillis = 120000) {
+    boolean waitUntilComplete(String requestId, int maxWaitMillis = 120000) {
         def start = new Date().getTime()
         while (true) {
             sleep(1000)
@@ -249,14 +249,15 @@ class AzureClient extends RESTClient {
             def status = jsonSlurper.parseText(statusResponse).Operation.Status
             if (status != 'InProgress') {
                 statusResponse
-                break
+                return true;
             }
             def end = new Date().getTime()
             if (end - start >= maxWaitMillis) {
                 println 'Max wait time ' + maxWaitMillis + ' exceeded.  Exiting.'
-                break
+                return false
             }
         }
+        return false
 
     }
 
