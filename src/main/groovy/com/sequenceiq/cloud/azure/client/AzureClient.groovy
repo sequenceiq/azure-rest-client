@@ -999,7 +999,7 @@ class AzureClient extends RESTClient {
      *   name: the name of the virtual machine to delete
      */
     def deleteVirtualMachine(Map args) throws HttpResponseException {
-        return delete(path: String.format('services/hostedservices/%s/deployments/%s', args.serviceName, args.name))
+        return delete(path: String.format('services/hostedservices/%s/deployments/%s?comp=media', args.serviceName, args.name))
     }
 
     static String convert(String response) throws XMLStreamException, IOException {
