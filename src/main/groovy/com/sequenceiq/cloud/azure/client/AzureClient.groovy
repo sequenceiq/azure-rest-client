@@ -830,8 +830,10 @@ class AzureClient extends RESTClient {
      *
      *   ports: specifies the ports to open.  This is specified as an array of maps with the following keys:
      *     name, port, protocol
-     *     For example, [[name: 'http', port: '80', localPort: '80', protocol: 'tcp'],
-     *                   [name: 'https', port: '443', localPort: '443', protocol: 'tcp']]
+     *     For example, [
+     *      [name: 'http', port: '80', localPort: '80', protocol: 'tcp', aclRules: [[action: 'deny', remoteSubNet: '0.0.0.0/0']]],
+     *      [name: 'https', port: '443', localPort: '443', protocol: 'tcp', aclRules: []]
+     *     ]
      */
     def createVirtualMachine(Map args) {
         return post(
@@ -880,18 +882,26 @@ class AzureClient extends RESTClient {
                                     ConfigurationSet {
                                         ConfigurationSetType('NetworkConfiguration')
                                         InputEndpoints {
-                                            InputEndpoint {
-                                                LocalPort(22)
-                                                Name('ssh')
-                                                Port(22)
-                                                Protocol('tcp')
-                                            }
                                             for (port in args.ports) {
                                                 InputEndpoint {
                                                     LocalPort(port.localPort)
                                                     Name(port.name)
                                                     Port(port.port)
                                                     Protocol(port.protocol)
+                                                    if (port.aclRules.size > 0) {
+                                                        EndpointAcl {
+                                                            Rules {
+                                                                for (int i = 0; i < port.aclRules.size; i++) {
+                                                                    Rule {
+                                                                        Order(i)
+                                                                        Action(port.aclRules[i].action)
+                                                                        RemoteSubnet(port.aclRules[i].remoteSubNet)
+                                                                        Description(port.aclRules[i].description)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
