@@ -371,7 +371,7 @@ class AzureClient extends RESTClient {
         } catch (e) {
             println('Error in the request')
         }
-        if (configs != null) {
+        if (configs != null && configs != 'null') {
             currentConfig = configs.replaceFirst('^[^<]*', '')
             root = new XmlParser().parseText(currentConfig)
         }
