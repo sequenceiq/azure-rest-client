@@ -938,6 +938,50 @@ class AzureClient extends RESTClient {
         )
     }
 
+    def updateEndpoints(Map args) {
+        return put(
+                path: String.format("services/hostedservices/%s/deployments/%s/roles/%s", args.name, args.name, args.name),
+                requestContentType: 'application/atom+xml',
+                body: {
+                    PersistentVMRole(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                        RoleName(args.name)
+                        RoleType('PersistentVMRole')
+                        ConfigurationSets {
+                            ConfigurationSet {
+                                ConfigurationSetType('NetworkConfiguration')
+                                InputEndpoints {
+                                    for (port in args.ports) {
+                                        InputEndpoint {
+                                            LocalPort(port.localPort)
+                                            Name(port.name)
+                                            Port(port.port)
+                                            Protocol(port.protocol)
+                                            if (port.aclRules.size > 0) {
+                                                EndpointAcl {
+                                                    Rules {
+                                                        for (int i = 0; i < port.aclRules.size; i++) {
+                                                            Rule {
+                                                                Order(i)
+                                                                Action(port.aclRules[i].action)
+                                                                RemoteSubnet(port.aclRules[i].remoteSubNet)
+                                                                Description(port.aclRules[i].description)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                SubnetNames {
+                                    SubnetName(args.subnetName)
+                                }
+                            }
+                        }
+                    }
+                }
+        )
+    }
 
     def addRole(Map args) {
             return post(
