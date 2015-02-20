@@ -976,6 +976,7 @@ class AzureClient extends RESTClient {
                                 SubnetNames {
                                     SubnetName(args.subnetName)
                                 }
+                                StaticVirtualNetworkIPAddress(args.virtualNetworkIPAddress)
                             }
                         }
                     }
