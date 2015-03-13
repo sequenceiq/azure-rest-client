@@ -290,6 +290,21 @@ class AzureClient extends RESTClient {
         return getOsImages().contains(imageName);
     }
 
+    def uploadManagementCertificate(Map args) {
+        return post(
+                path: "certificates",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    SubscriptionCertificate(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        SubscriptionCertificatePublicKey(args.subscriptionCertificatePublicKey)
+                        SubscriptionCertificateThumbprint(args.subscriptionCertificateThumbprint)
+                        SubscriptionCertificateData(args.subscriptionCertificateData)
+                    }
+                }
+        )
+    }
+
     /**
      * Creates an affinity group.
      * This needs to be created before creating storage accounts, virtual networks, cloud services, virtual machines, and other resources.
