@@ -42,6 +42,8 @@ class AzureClient extends RESTClient {
         authConfig.certificate(keyStorePath, keyStorePassword)
         setAuthConfig(authConfig)
         setHeaders("x-ms-version": "2014-04-01")
+        this.client.params.setParameter("http.socket.timeout", new Integer(20000))
+        this.client.params.setParameter("http.connection.timeout", new Integer(20000))
         // setting json as the desired format does not seem to work and always defaults to XML
         // "Content-Type": "application/json", "Accept": "application/json"
     }
