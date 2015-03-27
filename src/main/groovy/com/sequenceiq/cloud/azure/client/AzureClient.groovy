@@ -331,6 +331,29 @@ class AzureClient extends RESTClient {
         )
     }
 
+    def createReservedIP(Map args) {
+        return post(
+                path: "services/networking/reservedips",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    ReservedIP(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        Name(args.name)
+                        Label(args.name.bytes.encodeBase64().toString())
+                        Location(args.description)
+                    }
+                }
+        )
+    }
+
+    def getReservedIP(Map args, ContentType format = ContentType.JSON) throws HttpResponseException {
+        return get(path: String.format('services/networking/reservedips/%s', args.name), format: format)
+    }
+
+    def deleteReservedIP(Map args) throws HttpResponseException {
+        return delete(path: String.format('services/networking/reservedips/%s', args.name))
+    }
+
     /**
      * Deletes an affinity group.
      * @param args
