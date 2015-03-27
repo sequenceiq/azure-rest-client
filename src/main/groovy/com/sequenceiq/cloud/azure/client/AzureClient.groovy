@@ -340,7 +340,7 @@ class AzureClient extends RESTClient {
                     ReservedIP(xmlns: "http://schemas.microsoft.com/windowsazure") {
                         Name(args.name)
                         Label(args.name.bytes.encodeBase64().toString())
-                        Location(args.description)
+                        Location(args.location)
                     }
                 }
         )
