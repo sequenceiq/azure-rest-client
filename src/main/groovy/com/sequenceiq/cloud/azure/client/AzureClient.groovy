@@ -905,14 +905,6 @@ class AzureClient extends RESTClient {
                                                         Path(args.sshPublicKeyPath)
                                                     }
                                                 }
-
-                                               /* KeyPairs {
-                                                    KeyPair {
-                                                        FingerPrint(args.sshKeyPairFingerPrint)
-                                                        Path(args.sshKeyPairPath)
-                                                    }
-                                                }*/
-
                                             }
                                             if (args.customData) {
                                                 CustomData(args.customData)
@@ -973,6 +965,9 @@ class AzureClient extends RESTClient {
                             }
                         }
                         VirtualNetworkName(args.virtualNetworkName)
+                        if (args.reservedIpName) {
+                            ReservedIPName(args.reservedIpName)
+                        }
                     }
                 }
         )
