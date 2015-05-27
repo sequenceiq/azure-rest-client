@@ -149,7 +149,7 @@ class AzureClient extends RESTClient {
      * This was needed because the Azure API does not seem to return JSON even though the client sets appropriate
      * HTTP headers.
      *
-     * @param args: the same as what's accepted by groovyx.net.http.RESTClient, with an additional format which
+     * @param args : the same as what's accepted by groovyx.net.http.RESTClient, with an additional format which
      *   can be JSON or XML.  If format is not supplied, JSON is assumed.
      */
     def get(Map args) {
@@ -169,7 +169,7 @@ class AzureClient extends RESTClient {
     /**
      * Overrides the RESTClient's post method behavior so that temporary redirects cause automatic retries.
      */
-     def post(Map args) {
+    def post(Map args) {
         def argsClone = args.clone()
         log.info 'post original args=' + args
         def HttpResponseDecorator response = super.post(argsClone)
@@ -207,7 +207,7 @@ class AzureClient extends RESTClient {
         def argsClone = args.clone()
         log.info 'delete original args=' + args
         def HttpResponseDecorator response = super.delete(argsClone)
-        if(response.getStatus() == 404) {
+        if (response.getStatus() == 404) {
             throw new HttpResponseException("Resource not found");
         }
         // If the server responds with 307 (Temporary Redirect), DELETE again after a short wait
@@ -225,8 +225,7 @@ class AzureClient extends RESTClient {
      *
      * @param requestId
      * @return
-     * Succeeded example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"Succeeded","HttpStatusCode":200}}
-     * In Progress example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"InProgress"}}
+     * Succeeded example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"Succeeded","HttpStatusCode":200}}* In Progress example: {"Operation":{"ID":"e9e74e80-5709-9cd2-8aaa-a5c9d238a12a","Status":"InProgress"}}
      */
     def getRequestStatus(String requestId) {
         return get(path: "operations/" + requestId)
@@ -238,8 +237,8 @@ class AzureClient extends RESTClient {
 
     /**
      * Blocks until the asynchronous request is complete.
-     * @param requestId: the request ID for the asynchronous reqeust to wait on.
-     * @param maxWaitMillis: maximum number of wait time in millis; defaults to 120000ms, or 2 mins.
+     * @param requestId : the request ID for the asynchronous reqeust to wait on.
+     * @param maxWaitMillis : maximum number of wait time in millis; defaults to 120000ms, or 2 mins.
      * @return JSON object of the completed operation status; null if the request did not complete in max wait time millis.
      */
     boolean waitUntilComplete(String requestId, int maxWaitMillis = 120000) {
@@ -265,7 +264,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all locations available, such as "West US", "East Asia", etc.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getLocations(ContentType format = ContentType.JSON) {
         return get(path: "locations", format: format)
@@ -273,7 +272,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all affinity groups under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getAffinityGroups(ContentType format = ContentType.JSON) {
         return get(path: "affinitygroups", format: format)
@@ -281,8 +280,8 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets one affinity group under the subscription.
-     * @param format: JSON or XML
-     * @param name: name of affinity group
+     * @param format : JSON or XML
+     * @param name : name of affinity group
      */
     def getAffinityGroup(String name, ContentType format = ContentType.JSON) {
         return get(path: "affinitygroups/" + name, format: format)
@@ -311,7 +310,7 @@ class AzureClient extends RESTClient {
      * Creates an affinity group.
      * This needs to be created before creating storage accounts, virtual networks, cloud services, virtual machines, and other resources.
      * @param
-     *   name: the name of the affinity group to create
+     * name: the name of the affinity group to create
      *   description
      *   location: pick one from the output of getLocations(); e.g., "East US"
      */
@@ -366,7 +365,7 @@ class AzureClient extends RESTClient {
     /**
      * Gets all virtual network configurations for the subscription.
      * Used when creating a new virtual network.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getVirtualNetworkConfiguration(ContentType format = ContentType.JSON) {
         return get(path: "services/networking/media", format: format)
@@ -374,7 +373,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all virtual networks under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getVirtualNetworks(ContentType format = ContentType.JSON) {
         return get(path: "services/networking/virtualnetwork", format: format)
@@ -421,7 +420,7 @@ class AzureClient extends RESTClient {
         // Case where no configs currently exist
         if (root == null) {
             def rootContent = {
-                NetworkConfiguration ("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration"){
+                NetworkConfiguration("xmlns": "http://schemas.microsoft.com/ServiceHosting/2011/07/NetworkConfiguration") {
                     VirtualNetworkConfiguration {
                         if (args.dnsServerAddress) {
                             Dns {
@@ -585,6 +584,15 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Deletes a Storage Account with all it's VHD files.
+     *
+     * @param name name of the Storage Account
+     */
+    def deleteStorageAccount(String name) {
+        return delete(path: "services/storageservices/$name")
+    }
+
+    /**
      * Deletes a storage account.
      * Note that this call is asynchronous.
      * If there are no validation errors, the server returns 202 (Accepted).
@@ -599,7 +607,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all storage accounts under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getStorageAccounts(ContentType format = ContentType.JSON) {
         return get(path: "services/storageservices", format: format)
@@ -607,13 +615,12 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all storage accounts under the subscription.
-     * @param format: JSON or XML
-     * @param name: storage name
+     * @param format : JSON or XML
+     * @param name : storage name
      */
     def getStorageAccount(String name, ContentType format = ContentType.JSON) {
         return get(path: "services/storageservices/" + name, format: format)
     }
-
 
     /**
      * Gets the key for the specified storage account.
@@ -629,12 +636,11 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all available OS images that can be used to create disks for new VMs.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getOsImages(ContentType format = ContentType.JSON) {
         return get(path: "services/images", format: format)
     }
-
 
     /**
      * Adds an operating system image to the image repository that is associated with the specified subscription.
@@ -660,8 +666,17 @@ class AzureClient extends RESTClient {
     }
 
     /**
+     * Deletes an OS image. It does not delete the VHD file stored in a Storage Account.
+     *
+     * @param name name of the image
+     */
+    def deleteOsImage(String name) {
+        return delete(path: "services/images/$name")
+    }
+
+    /**
      * Gets all disks under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getDisks(ContentType format = ContentType.JSON) {
         return get(path: "services/disks", format: format)
@@ -679,7 +694,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all image under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getVmImages(ContentType format = ContentType.JSON) {
         return get(path: "services/vmimages", format: format)
@@ -687,7 +702,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all cloud services under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getCloudServices(ContentType format = ContentType.JSON) {
         return get(path: "services/hostedservices", format: format)
@@ -695,8 +710,8 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets one cloud service under the subscription.
-     * @param format: JSON or XML
-     * @param name: name of te cloud service
+     * @param format : JSON or XML
+     * @param name : name of te cloud service
      */
     def getCloudService(String name, ContentType format = ContentType.JSON) {
         return get(path: "services/hostedservices/" + name, format: format)
@@ -704,7 +719,7 @@ class AzureClient extends RESTClient {
 
     /**
      * Gets all resource extensions under the subscription.
-     * @param format: JSON or XML
+     * @param format : JSON or XML
      */
     def getResourceExtensions(ContentType format = ContentType.JSON) {
         return get(path: "services/resourceextensions", format: format)
@@ -714,23 +729,23 @@ class AzureClient extends RESTClient {
      * Creates a cloud service.
      * Before creating a VM, you need to create a cloud service.
      * @param
-     *   name: name of the cloud service to create
+     * name: name of the cloud service to create
      *   description
      *   affinity group: affinity group to which this cloud service will belong
      */
     def createCloudService(Map args) {
         return post(
-            path: "services/hostedservices",
-            requestContentType: XML,
-            body: {
-                mkp.xmlDeclaration()
-                CreateHostedService(xmlns: "http://schemas.microsoft.com/windowsazure") {
-                    ServiceName(args.name)
-                    Label(args.name.bytes.encodeBase64().toString())
-                    Description(args.description)
-                    AffinityGroup(args.affinityGroup)
+                path: "services/hostedservices",
+                requestContentType: XML,
+                body: {
+                    mkp.xmlDeclaration()
+                    CreateHostedService(xmlns: "http://schemas.microsoft.com/windowsazure") {
+                        ServiceName(args.name)
+                        Label(args.name.bytes.encodeBase64().toString())
+                        Description(args.description)
+                        AffinityGroup(args.affinityGroup)
+                    }
                 }
-            }
         )
     }
 
@@ -743,10 +758,9 @@ class AzureClient extends RESTClient {
         return delete(path: String.format('services/hostedservices/%s', args.name))
     }
 
-
     /**
      * Gets all certificates that belong to a cloud service.
-     * @param name: the name of the cloud service to get certificates for.
+     * @param name : the name of the cloud service to get certificates for.
      * @param format
      * @return
      */
@@ -1020,61 +1034,61 @@ class AzureClient extends RESTClient {
     }
 
     def addRole(Map args) {
-            return post(
-                    path: String.format("services/hostedservices/%s/deployments/%s/roles", args.serviceName, args.depname),
-                    requestContentType: 'application/xml',
-                    body: {
-                        PersistentVMRole(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
-                            RoleName(args.name)
-                            RoleType('PersistentVMRole')
-                            ConfigurationSets {
-                                ConfigurationSet {
-                                    ConfigurationSetType('LinuxProvisioningConfiguration')
-                                    HostName(args.hostname)
-                                    UserName(args.username)
-                                    if (args.password) {
-                                        UserPassword(args.password)
-                                        DisableSshPasswordAuthentication(false)
-                                    } else {
-                                        DisableSshPasswordAuthentication(true)
-                                        SSH {
-                                            PublicKeys {
-                                                PublicKey {
-                                                    Fingerprint(args.sshPublicKeyFingerprint)
-                                                    Path(args.sshPublicKeyPath)
-                                                }
+        return post(
+                path: String.format("services/hostedservices/%s/deployments/%s/roles", args.serviceName, args.depname),
+                requestContentType: 'application/xml',
+                body: {
+                    PersistentVMRole(xmlns: "http://schemas.microsoft.com/windowsazure", "xmlns:i": "http://www.w3.org/2001/XMLSchema-instance") {
+                        RoleName(args.name)
+                        RoleType('PersistentVMRole')
+                        ConfigurationSets {
+                            ConfigurationSet {
+                                ConfigurationSetType('LinuxProvisioningConfiguration')
+                                HostName(args.hostname)
+                                UserName(args.username)
+                                if (args.password) {
+                                    UserPassword(args.password)
+                                    DisableSshPasswordAuthentication(false)
+                                } else {
+                                    DisableSshPasswordAuthentication(true)
+                                    SSH {
+                                        PublicKeys {
+                                            PublicKey {
+                                                Fingerprint(args.sshPublicKeyFingerprint)
+                                                Path(args.sshPublicKeyPath)
                                             }
-                                            /*
-                                KeyPairs {
-                                    KeyPair {
-                                        FingerPrint(args.sshKeyPairFingerPrint)
-                                        Path(args.sshKeyPairPath)
-                                    }
-                                }
-                                */
                                         }
-                                        if (args.customData) {
-                                            CustomData(args.customData)
-                                        }
+                                        /*
+                            KeyPairs {
+                                KeyPair {
+                                    FingerPrint(args.sshKeyPairFingerPrint)
+                                    Path(args.sshKeyPairPath)
+                                }
+                            }
+                            */
+                                    }
+                                    if (args.customData) {
+                                        CustomData(args.customData)
                                     }
                                 }
-                                ConfigurationSet {
-                                    ConfigurationSetType('NetworkConfiguration')
+                            }
+                            ConfigurationSet {
+                                ConfigurationSetType('NetworkConfiguration')
 
-                                    SubnetNames {
-                                        SubnetName(args.subnetName)
-                                    }
+                                SubnetNames {
+                                    SubnetName(args.subnetName)
                                 }
+                            }
 
-                            }
-                            OSVirtualHardDisk {
-                                MediaLink(args.imageStoreUri)
-                                SourceImageName(args.imageName)
-                            }
-                            RoleSize(args.vmType)
                         }
+                        OSVirtualHardDisk {
+                            MediaLink(args.imageStoreUri)
+                            SourceImageName(args.imageName)
+                        }
+                        RoleSize(args.vmType)
                     }
-            )
+                }
+        )
 
     }
 
@@ -1094,7 +1108,7 @@ class AzureClient extends RESTClient {
 
     static String convert(String response) throws XMLStreamException, IOException {
         try {
-            String xmlHeader= "xmlns=\"http://schemas.microsoft.com/windowsazure\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\""
+            String xmlHeader = "xmlns=\"http://schemas.microsoft.com/windowsazure\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\""
             HierarchicalStreamReader sourceReader = new XppReader(new StringReader(response.toString().replaceAll(xmlHeader, "")))
 
             StringWriter buffer = new StringWriter()
