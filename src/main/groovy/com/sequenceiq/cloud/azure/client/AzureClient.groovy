@@ -966,7 +966,7 @@ class AzureClient extends RESTClient {
                                             DataVirtualHardDisk {
                                                 Lun(i)
                                                 LogicalDiskSizeInGB(args.disks[i])
-                                                MediaLink("http://${args.affinityGroup}.blob.core.windows.net/vhd-store/${args.name}-0${i}.vhd")
+                                                MediaLink("http://${args.storageName}.blob.core.windows.net/vhd-store/${args.name}-0${i}.vhd")
                                             }
                                         }
                                     }
