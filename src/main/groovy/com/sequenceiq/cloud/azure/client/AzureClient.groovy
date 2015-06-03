@@ -914,9 +914,11 @@ class AzureClient extends RESTClient {
                                             DisableSshPasswordAuthentication(true)
                                             SSH {
                                                 PublicKeys {
-                                                    PublicKey {
-                                                        Fingerprint(args.sshPublicKeyFingerprint)
-                                                        Path(args.sshPublicKeyPath)
+                                                    for (sshKey in args.sshKeys) {
+                                                        PublicKey {
+                                                            Fingerprint(sshKey.fingerPrint)
+                                                            Path(sshKey.PublicKeyPath)
+                                                        }
                                                     }
                                                 }
                                             }
