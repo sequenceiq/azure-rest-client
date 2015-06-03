@@ -768,6 +768,10 @@ class AzureClient extends RESTClient {
         return get(path: String.format('services/hostedservices/%s/certificates', args.name), format: format)
     }
 
+    def deleteServiceCertificates(Map args) throws Exception {
+        return delete(path: String.format('services/hostedservices/%s/certificates/%s-%s', args.name, args.algorithm, args.thumbprint))
+    }
+
     /**
      * Creates a certificate for a cloud service.
      * Note that this call is asynchronous.
