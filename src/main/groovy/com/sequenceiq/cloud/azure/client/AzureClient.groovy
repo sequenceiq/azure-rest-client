@@ -921,7 +921,7 @@ class AzureClient extends RESTClient {
                                                     for (sshKey in args.sshKeys) {
                                                         PublicKey {
                                                             Fingerprint(sshKey.fingerPrint)
-                                                            Path(sshKey.PublicKeyPath)
+                                                            Path(sshKey.publicKeyPath)
                                                         }
                                                     }
                                                 }
