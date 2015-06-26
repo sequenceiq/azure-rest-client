@@ -1,5 +1,4 @@
 package com.sequenceiq.cloud.azure.client
-
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.RESTClient
 import org.apache.commons.logging.Log
@@ -70,8 +69,9 @@ class AzureClientUtil {
         )
         client.put(
                 path: targetImageUri,
-                requestContentType: TEXT
-                // can't use XML here, because Azure REST Server returns some extra characters
+                requestContentType: TEXT,
+                contentType: TEXT
+                // can't use XML here, because Azure REST Server returns some extra characters (the BOM)
                 // and causes the XML parser to throw "org.xml.sax.SAXParseException: Content is not allowed in prolog"
         )
     }
