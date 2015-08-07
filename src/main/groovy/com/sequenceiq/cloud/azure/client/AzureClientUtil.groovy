@@ -42,6 +42,40 @@ class AzureClientUtil {
         )
     }
 
+    static def putBlob(String authKey, String targetBlobContainerUri, String containerName, String blobName, String putBody) {
+        def RESTClient client = new RESTClient(targetBlobContainerUri)
+
+        def msDateString = getMsDateString()
+
+        def store = getStorageAccountNameFromUri(targetBlobContainerUri)
+        def canonicalized = '/' + store + '/' + containerName
+
+        def rawAuthString = getRawAuthStringForBlobApi(
+                'PUT',
+                'x-ms-date:' + msDateString + '\nx-ms-version:' + '2009-09-19',
+                canonicalized + '\ncomp:metadata\nrestype:container\ntimeout:20'
+        )
+
+        def authHash = getAuthHashForBlobApi(authKey, rawAuthString)
+
+        client.setHeaders(
+                'x-ms-date': msDateString,
+                'x-ms-version': '2015-02-21',
+                'Content-Type': 'text/plain; charset=UTF-8',
+                'Authorization': 'SharedKey ' + getStorageAccountNameFromUri(targetBlobContainerUri) + ':' + authHash,
+                'x-ms-blob-type': 'BlockBlob',
+                //'Content-Length': putBody.length()
+                // need to add 'Content-Length' since the underlying HTTP client does not add it for the HEAD request
+                // but we assume so when we generate auth string
+        )
+        def HttpResponseDecorator response = client.put(
+                path: targetBlobContainerUri,
+                requestContentType: TEXT,
+                body: putBody
+        )
+        return response
+    }
+
     static private getMsDateString() {
         Calendar cal = Calendar.getInstance();
         cal.setTimeZone(TimeZone.getTimeZone("GMT"));
