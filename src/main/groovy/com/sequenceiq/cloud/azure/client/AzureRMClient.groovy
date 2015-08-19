@@ -299,7 +299,12 @@ class AzureRMClient extends RESTClient {
     }
 
     Map<String, Object> getVirtualMachine(String resourceGroup, String vmName) throws Exception {
-        Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroup, vmName), apiversion: '2014-12-01-preview').responseData;
+        Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroup, vmName), apiversion: '2015-05-01-preview').responseData;
+        return result;
+    }
+
+    Map<String, Object> getVirtualMachineInstanceView(String resourceGroup, String vmName) throws Exception {
+        Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s/InstanceView", resourceGroup, vmName), apiversion: '2015-05-01-preview').responseData;
         return result;
     }
 
