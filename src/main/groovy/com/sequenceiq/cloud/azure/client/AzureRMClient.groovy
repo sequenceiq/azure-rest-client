@@ -12,12 +12,14 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer
 import com.microsoft.azure.storage.blob.CloudBlockBlob
 import com.microsoft.azure.storage.blob.CloudPageBlob
 import com.microsoft.azure.storage.blob.CopyState
+import com.microsoft.azure.storage.blob.ListBlobItem
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovyx.net.http.ContentType
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.HttpResponseException
 import groovyx.net.http.RESTClient
+import org.apache.commons.collections.CollectionUtils
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -253,6 +255,11 @@ class AzureRMClient extends RESTClient {
         return result;
     }
 
+    Map<String, Object> getStorageStatus(String resourceGroup, String storageName) throws Exception {
+      Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/Microsoft.Storage/storageAccounts/%s", resourceGroup, storageName), apiversion: '2015-05-01-preview').responseData;
+      return result.properties.provisioningState;
+    }
+
     def createContainerInStorage(String resourceGroup, String storageName, String containerName) throws Exception {
         def keys = getStorageAccountKeys(resourceGroup, storageName);
         String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
@@ -301,13 +308,15 @@ class AzureRMClient extends RESTClient {
         storageAccount;
     }
 
-    CloudStorageAccount getContainerInStorage(String resourceGroup, String storageName, String containerName) {
+    List<ListBlobItem> listBlobInStorage(String resourceGroup, String storageName, String containerName) {
         def keys = getStorageAccountKeys(resourceGroup, storageName);
         String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
         CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         CloudBlobContainer container = blobClient.getContainerReference(containerName);
-        container;
+        List<ListBlobItem> targetCollection = new ArrayList<ListBlobItem>();
+        CollectionUtils.addAll(targetCollection, container.listBlobs().iterator())
+        return targetCollection;
     }
 
     def deleteTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName) throws Exception {
