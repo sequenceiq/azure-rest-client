@@ -281,7 +281,7 @@ class AzureRMClient extends RESTClient {
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         CloudBlobContainer container = blobClient.getContainerReference(containerName);
         CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
-        cloudPageBlob.startCopyFromBlob(sourceBlob);
+        cloudPageBlob.startCopy(new URI(sourceBlob));
     }
 
     CopyState getCopyStatus(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
@@ -294,16 +294,21 @@ class AzureRMClient extends RESTClient {
         cloudPageBlob.getCopyState();
     }
 
-    /*def createTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName, String blobContent) throws Exception{
+    CloudStorageAccount getStorage(String resourceGroup, String storageName) {
+        def keys = getStorageAccountKeys(resourceGroup, storageName);
+        String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+        storageAccount;
+    }
+
+    CloudStorageAccount getContainerInStorage(String resourceGroup, String storageName, String containerName) {
         def keys = getStorageAccountKeys(resourceGroup, storageName);
         String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
         CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
-        CloudBlobContainer container = blobClient.getContainerReference("templates");
-        container.createIfNotExists();
-        CloudBlockBlob blob = container.getBlockBlobReference(blobName);
-        blob.upload(new ByteArrayInputStream(blobContent.getBytes()), blobContent.length());
-    }*/
+        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        container;
+    }
 
     def deleteTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName) throws Exception {
         deleteBlobInStorageContainer(resourceGroup, storageName, "templates", blobName);
