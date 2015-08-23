@@ -255,7 +255,7 @@ class AzureRMClient extends RESTClient {
         return result;
     }
 
-    Map<String, Object> getStorageStatus(String resourceGroup, String storageName) throws Exception {
+    String getStorageStatus(String resourceGroup, String storageName) throws Exception {
       Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/Microsoft.Storage/storageAccounts/%s", resourceGroup, storageName), apiversion: '2015-05-01-preview').responseData;
       return result.properties.provisioningState;
     }
