@@ -5,7 +5,13 @@ import com.microsoft.aad.adal4j.AuthenticationContext
 import com.microsoft.aad.adal4j.AuthenticationResult
 import com.microsoft.aad.adal4j.ClientCredential
 import com.microsoft.azure.storage.CloudStorageAccount
-import com.microsoft.azure.storage.blob.*
+import com.microsoft.azure.storage.blob.BlobContainerPermissions
+import com.microsoft.azure.storage.blob.BlobContainerPublicAccessType
+import com.microsoft.azure.storage.blob.CloudBlobClient
+import com.microsoft.azure.storage.blob.CloudBlobContainer
+import com.microsoft.azure.storage.blob.CloudBlockBlob
+import com.microsoft.azure.storage.blob.CloudPageBlob
+import com.microsoft.azure.storage.blob.CopyState
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import groovyx.net.http.ContentType
@@ -268,7 +274,27 @@ class AzureRMClient extends RESTClient {
         container.uploadPermissions(containerPermissions);
     }
 
-    def createTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName, String blobContent) throws Exception{
+    def copyImageBlobInStorageContainer(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
+        def keys = getStorageAccountKeys(resourceGroup, storageName);
+        String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
+        cloudPageBlob.startCopyFromBlob(sourceBlob);
+    }
+
+    CopyState getCopyStatus(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
+        def keys = getStorageAccountKeys(resourceGroup, storageName);
+        String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
+        cloudPageBlob.getCopyState();
+    }
+
+    /*def createTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName, String blobContent) throws Exception{
         def keys = getStorageAccountKeys(resourceGroup, storageName);
         String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
         CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
@@ -277,7 +303,7 @@ class AzureRMClient extends RESTClient {
         container.createIfNotExists();
         CloudBlockBlob blob = container.getBlockBlobReference(blobName);
         blob.upload(new ByteArrayInputStream(blobContent.getBytes()), blobContent.length());
-    }
+    }*/
 
     def deleteTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName) throws Exception {
         deleteBlobInStorageContainer(resourceGroup, storageName, "templates", blobName);

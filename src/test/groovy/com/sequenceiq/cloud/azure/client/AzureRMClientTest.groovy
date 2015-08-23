@@ -41,7 +41,7 @@ class AzureRMClientTest extends Specification {
 
     void "get template deployment"() {
         when:
-        def group = azureClientV2.getTemplateDeployment("krisztian1", "krisztian1")
+        def group = azureClientV2.getTemplateDeployment("azuretest6", "azuretest6")
         System.out.print(group)
         then:
         noExceptionThrown()
@@ -134,7 +134,7 @@ class AzureRMClientTest extends Specification {
 
     void "test deployment operations"() {
         when:
-        Map<String, Object> result = azureClientV2.getTemplateDeploymentOperations("krisztian1", "ricsideployment")
+        Map<String, Object> result = azureClientV2.getTemplateDeploymentOperations("azuretest6", "azuretest6")
         System.out.print(result)
         then:
         noExceptionThrown()
@@ -178,11 +178,35 @@ class AzureRMClientTest extends Specification {
         noExceptionThrown()
     }
 
+    void "get vms"() {
+        when:
+        def machine = azureClientV2.getVirtualMachine("azuretest6", "azuretest6cbgateway0")
+        System.out.println(machine);
+        then:
+        noExceptionThrown()
+    }
+
+    void "get vms veiw"() {
+      when:
+      def machine = azureClientV2.getVirtualMachineInstanceView("azuretest6", "azuretest6cbgateway0")
+      System.out.println(machine);
+      then:
+      noExceptionThrown()
+    }
+
     void "deallocate vms"() {
         when:
         azureClientV2.deallocateVirtualMachine("ricsitesztel", "teststack1vmslave11")
         then:
         noExceptionThrown()
+    }
+
+    void "list vms"() {
+      when:
+      def machine = azureClientV2.getVirtualMachines("azuretest6")
+      System.out.println(machine);
+      then:
+      noExceptionThrown()
     }
 
     void "delete vms"() {
