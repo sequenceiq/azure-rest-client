@@ -416,5 +416,17 @@ class AzureRMClient extends RESTClient {
         return list;
     }
 
+    Map<String, Object> getLoadBalancer(String resourceGroup, String lbName) throws Exception {
+        Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/microsoft.network/loadBalancers/%s", resourceGroup, lbName), apiversion: '2014-12-01-preview').responseData;
+        return result;
+    }
+
+    String getLoadBalancerIp(String resourceGroup, String lbName) throws Exception {
+        Map<String, Object> result = getLoadBalancer(resourceGroup, lbName);
+        String ipName = result.properties.frontendIPConfigurations[0].properties.publicIPAddress.id;
+        Map<String, Object> ipresult = getPublicIpAddress(resourceGroup, ipName.split("/").last());
+        return ipresult.properties.ipAddress;
+    }
+
 
 }
