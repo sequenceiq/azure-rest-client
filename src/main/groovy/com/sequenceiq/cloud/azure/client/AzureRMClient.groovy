@@ -12,6 +12,7 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer
 import com.microsoft.azure.storage.blob.CloudBlockBlob
 import com.microsoft.azure.storage.blob.CloudPageBlob
 import com.microsoft.azure.storage.blob.CopyState
+import com.microsoft.azure.storage.blob.LeaseStatus
 import com.microsoft.azure.storage.blob.ListBlobItem
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
@@ -281,14 +282,14 @@ class AzureRMClient extends RESTClient {
         container.uploadPermissions(containerPermissions);
     }
 
-    def copyImageBlobInStorageContainer(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
+    String copyImageBlobInStorageContainer(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
         def keys = getStorageAccountKeys(resourceGroup, storageName);
         String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
         CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         CloudBlobContainer container = blobClient.getContainerReference(containerName);
         CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
-        cloudPageBlob.startCopy(new URI(sourceBlob));
+        return cloudPageBlob.startCopy(new URI(sourceBlob));
     }
 
     CopyState getCopyStatus(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
@@ -298,7 +299,27 @@ class AzureRMClient extends RESTClient {
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         CloudBlobContainer container = blobClient.getContainerReference(containerName);
         CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
-        cloudPageBlob.getCopyState();
+        return cloudPageBlob.getCopyState();
+    }
+
+    CloudPageBlob getPageBlob(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
+        def keys = getStorageAccountKeys(resourceGroup, storageName);
+        String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
+        return cloudPageBlob;
+    }
+
+    LeaseStatus getBlobLease(String resourceGroup, String storageName, String containerName, String sourceBlob) throws Exception{
+      def keys = getStorageAccountKeys(resourceGroup, storageName);
+      String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+      CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+      CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+      CloudBlobContainer container = blobClient.getContainerReference(containerName);
+      CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
+      return cloudPageBlob.getProperties().leaseStatus;
     }
 
     CloudStorageAccount getStorage(String resourceGroup, String storageName) {
