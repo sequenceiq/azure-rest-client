@@ -242,11 +242,11 @@ class AzureRMClient extends RESTClient {
         return delete(route: String.format("resourceGroups/%s/providers/Microsoft.Storage/storageAccounts/%s", resourceGroup, storageName), apiversion: '2015-05-01-preview');
     }
 
-    def createStorageAccount(String resourceGroup, String storageName, String storageLocation, String accountType = 'Standard_GRS') throws Exception {
+    def createStorageAccount(String resourceGroup, String storageName, String storageLocation, String accType = 'Standard_GRS') throws Exception {
         return put(route: String.format("resourceGroups/%s/providers/Microsoft.Storage/storageAccounts/%s", resourceGroup, storageName), apiversion: '2015-05-01-preview', body: {
             location(storageLocation)
             properties {
-                accountType(accountType)
+                accountType(accType)
             }
         });
     }
