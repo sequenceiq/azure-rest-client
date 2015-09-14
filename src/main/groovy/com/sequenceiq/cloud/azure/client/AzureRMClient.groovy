@@ -299,6 +299,8 @@ class AzureRMClient extends RESTClient {
         CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
         CloudBlobContainer container = blobClient.getContainerReference(containerName);
         CloudPageBlob cloudPageBlob = container.getPageBlobReference(sourceBlob.split("/").last());
+        container.downloadAttributes() ;
+        cloudPageBlob.downloadAttributes();
         return cloudPageBlob.getCopyState();
     }
 
