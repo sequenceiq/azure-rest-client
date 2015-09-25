@@ -342,6 +342,15 @@ class AzureRMClient extends RESTClient {
         return targetCollection;
     }
 
+    def deleteContainerInStorage(String resourceGroup, String storageName, String containerName) throws Exception {
+        def keys = getStorageAccountKeys(resourceGroup, storageName);
+        String storageConnectionString = String.format("DefaultEndpointsProtocol=http;AccountName=%s;AccountKey=%s", storageName, keys.get("key1"));
+        CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+        CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
+        CloudBlobContainer container = blobClient.getContainerReference(containerName);
+        container.deleteIfExists();
+    }
+
     def deleteTemplateBlobInStorageContainer(String resourceGroup, String storageName, String blobName) throws Exception {
         deleteBlobInStorageContainer(resourceGroup, storageName, "templates", blobName);
     }
