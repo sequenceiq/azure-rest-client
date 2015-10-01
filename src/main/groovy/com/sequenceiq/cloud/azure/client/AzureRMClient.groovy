@@ -404,7 +404,7 @@ class AzureRMClient extends RESTClient {
     }
 
     def stopVirtualMachine(String resourceGroup, String vmName) throws Exception {
-        def result = post(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s/stop", resourceGroup, vmName), apiversion: '2015-05-01-preview');
+        def result = post(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s/powerOff", resourceGroup, vmName), apiversion: '2015-05-01-preview');
         return result;
     }
 
