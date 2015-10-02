@@ -381,12 +381,12 @@ class AzureRMClient extends RESTClient {
     }
 
     def deallocateVirtualMachine(String resourceGroup, String vmName) throws Exception {
-        def result = post(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s/deallocate", resourceGroup, vmName), apiversion: '2014-12-01-preview');
+        def result = post(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s/deallocate", resourceGroup, vmName), apiversion: '2015-05-01-preview');
         return result;
     }
 
     def deleteVirtualMachine(String resourceGroup, String vmName) throws Exception {
-        def result = delete(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroup, vmName), apiversion: '2014-12-01-preview');
+        def result = delete(route: String.format("resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", resourceGroup, vmName), apiversion: '2015-05-01-preview');
         return result;
     }
 
