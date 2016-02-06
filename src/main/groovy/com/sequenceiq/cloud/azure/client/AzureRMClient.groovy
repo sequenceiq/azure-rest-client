@@ -448,6 +448,13 @@ class AzureRMClient extends RESTClient {
         return list;
     }
 
+    def associateSecurityGroup(String subnetResourceGroup, String virtualNetwork, String subnet, String secGroupResourceGroup, String securityGroup) {
+        def path = "resourceGroups/$subnetResourceGroup/providers/Microsoft.Network/virtualNetworks/$virtualNetwork/subnets/$subnet"
+        def addressPrefix = get(route: path, apiversion: '2015-06-15').responseData.properties.addressPrefix
+        def body = new JsonBuilder(["properties": ["addressPrefix": addressPrefix, "networkSecurityGroup": ["id": "/subscriptions/$subscriptionId/resourceGroups/$secGroupResourceGroup/providers/Microsoft.Network/networkSecurityGroups/$securityGroup"]]]).toPrettyString()
+        rawput(route: path, body: body, apiversion: '2015-06-15').responseData;
+    }
+
     Map<String, Object> getLoadBalancer(String resourceGroup, String lbName) throws Exception {
         Map<String, Object> result = get(route: String.format("resourceGroups/%s/providers/microsoft.network/loadBalancers/%s", resourceGroup, lbName), apiversion: '2014-12-01-preview').responseData;
         return result;
