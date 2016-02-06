@@ -448,10 +448,24 @@ class AzureRMClient extends RESTClient {
         return list;
     }
 
+    def Map getSubnetProperties(String resourceGroup, String virtualNetwork, String subnet){
+        def path = "resourceGroups/$resourceGroup/providers/Microsoft.Network/virtualNetworks/$virtualNetwork/subnets/$subnet"
+        get(route: path, apiversion: '2015-06-15').responseData.properties
+    }
+
     def associateSecurityGroup(String subnetResourceGroup, String virtualNetwork, String subnet, String secGroupResourceGroup, String securityGroup) {
         def path = "resourceGroups/$subnetResourceGroup/providers/Microsoft.Network/virtualNetworks/$virtualNetwork/subnets/$subnet"
-        def addressPrefix = get(route: path, apiversion: '2015-06-15').responseData.properties.addressPrefix
-        def body = new JsonBuilder(["properties": ["addressPrefix": addressPrefix, "networkSecurityGroup": ["id": "/subscriptions/$subscriptionId/resourceGroups/$secGroupResourceGroup/providers/Microsoft.Network/networkSecurityGroups/$securityGroup"]]]).toPrettyString()
+        def subnetProperties = getSubnetProperties(subnetResourceGroup, virtualNetwork, subnet)
+        subnetProperties << ["networkSecurityGroup": ["id": "/subscriptions/$subscriptionId/resourceGroups/$secGroupResourceGroup/providers/Microsoft.Network/networkSecurityGroups/$securityGroup"]]
+        def body = new JsonBuilder(["properties": subnetProperties]).toPrettyString()
+        rawput(route: path, body: body, apiversion: '2015-06-15').responseData;
+    }
+
+    def dissociateSecurityGroup(String subnetResourceGroup, String virtualNetwork, String subnet) {
+        def path = "resourceGroups/$subnetResourceGroup/providers/Microsoft.Network/virtualNetworks/$virtualNetwork/subnets/$subnet"
+        def subnetProperties = getSubnetProperties(subnetResourceGroup, virtualNetwork, subnet)
+        subnetProperties << ["networkSecurityGroup": null]
+        def body = new JsonBuilder(["properties": subnetProperties]).toPrettyString()
         rawput(route: path, body: body, apiversion: '2015-06-15').responseData;
     }
 
