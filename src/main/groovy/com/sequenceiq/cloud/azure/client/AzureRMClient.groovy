@@ -453,6 +453,11 @@ class AzureRMClient extends RESTClient {
         get(route: path, apiversion: '2015-06-15').responseData.properties
     }
 
+    def Map getSecurityGroupProperties(String resourceGroup, String securityGroup){
+        def path = "resourceGroups/$resourceGroup/providers/Microsoft.Network/networkSecurityGroups/$securityGroup"
+        get(route: path, apiversion: '2015-06-15').responseData.properties
+    }
+
     def associateSecurityGroup(String subnetResourceGroup, String virtualNetwork, String subnet, String secGroupResourceGroup, String securityGroup) {
         def path = "resourceGroups/$subnetResourceGroup/providers/Microsoft.Network/virtualNetworks/$virtualNetwork/subnets/$subnet"
         def subnetProperties = getSubnetProperties(subnetResourceGroup, virtualNetwork, subnet)
